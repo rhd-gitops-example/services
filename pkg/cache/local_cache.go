@@ -132,7 +132,6 @@ func (l *LocalCache) CommitAndPushBranch(ctx context.Context, repoURL, branch, m
 	if err != nil {
 		return fmt.Errorf("failed to create a WorkTree: %w", err)
 	}
-	// TODO: provide credentials.
 	_, err = w.Commit(message, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  l.credentials.name,

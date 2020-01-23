@@ -38,20 +38,20 @@ func PromoteService(cache cache.GitCache, token, service, fromEnv, toEnv, newBra
 	fileToUpdate := pathForService(service)
 	newBody, err := cache.ReadFileFromBranch(ctx, fromURL, fileToUpdate, "master")
 	if err != nil {
-		return fmt.Errorf("failed to read the file %v from the %v environment: %s", fileToUpdate, fromEnv, err)
+		return fmt.Errorf("failed to read the file %v from the %v environment: %v", fileToUpdate, fromEnv, err)
 	}
 	err = cache.CreateAndCheckoutBranch(ctx, toURL, "master", newBranchName)
 	if err != nil {
-		return fmt.Errorf("failed to create and checkout the new branch %v for the %v environment: %s", newBranchName, toEnv, err)
+		return fmt.Errorf("failed to create and checkout the new branch %v for the %v environment: %v", newBranchName, toEnv, err)
 	}
 	err = cache.WriteFileToBranchAndStage(ctx, toURL, newBranchName, fileToUpdate, newBody)
 	if err != nil {
-		return fmt.Errorf("failed to write the updated file to %v: %s", fileToUpdate, err)
+		return fmt.Errorf("failed to write the updated file to %v: %v", fileToUpdate, err)
 	}
 
 	err = cache.CommitAndPushBranch(ctx, toURL, newBranchName, "this is a test commit", token)
 	if err != nil {
-		return fmt.Errorf("failed to commit and push branch for environment %v: %s", toEnv, err)
+		return fmt.Errorf("failed to commit and push branch for environment %v: %v", toEnv, err)
 	}
 
 	pr, err := createPullRequest(ctx, fromEnv, fromURL, toEnv, toURL, token, newBranchName)
