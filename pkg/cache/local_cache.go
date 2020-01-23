@@ -14,13 +14,19 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
+type userCredentials struct {
+	name  string
+	email string
+}
+
 type LocalCache struct {
-	cacheDir string
+	cacheDir    string
+	credentials userCredentials
 }
 
 // NewLocalCache creates a new LocalCache and ensures that the provided cacheDir
 // exists.
-func NewLocalCache(cacheDir string) (*LocalCache, error) {
+func NewLocalCache(cacheDir, name, email string) (*LocalCache, error) {
 	cacheDirExists, err := dirExists(cacheDir)
 	if err != nil {
 		return nil, fmt.Errorf("error getting the cache dir: %w", err)
@@ -32,7 +38,7 @@ func NewLocalCache(cacheDir string) (*LocalCache, error) {
 			return nil, fmt.Errorf("error getting the cache dir: %w", err)
 		}
 	}
-	return &LocalCache{cacheDir: cacheDir}, nil
+	return &LocalCache{cacheDir: cacheDir, credentials: userCredentials{name: name, email: email}}, nil
 }
 
 func (l *LocalCache) ReadFileFromBranch(ctx context.Context, repoURL, filePath, branch string) ([]byte, error) {
@@ -129,8 +135,8 @@ func (l *LocalCache) CommitAndPushBranch(ctx context.Context, repoURL, branch, m
 	// TODO: provide credentials.
 	_, err = w.Commit(message, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "Kevin McDermott",
-			Email: "kmcdermo@redhat.com",
+			Name:  l.credentials.name,
+			Email: l.credentials.email,
 			When:  time.Now(),
 		},
 	})

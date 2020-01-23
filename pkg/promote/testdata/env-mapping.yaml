@@ -1,0 +1,2 @@
+dev: https://example.com/testing/env-dev.git
+staging: https://example.com/testing/env-staging.git

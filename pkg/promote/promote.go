@@ -8,7 +8,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/github"
-	"github.com/mitchellh/go-homedir"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
 
@@ -16,6 +15,14 @@ import (
 	"github.com/bigkevmcd/promote/pkg/util"
 )
 
+// PromoteService is the main driver for promoting files between two
+// repositories.
+//
+// It uses a GitCache to checkout the code to, and will copy the environment
+// configuration for the `fromEnv` to the `toEnv` in a named branch.
+//
+// The Git repositories are looked up in the mapping, and a pull request is
+// opened in the toEnv's project,
 func PromoteService(cache cache.GitCache, token, service, fromEnv, toEnv, newBranchName string, mapping map[string]string) error {
 	ctx := context.Background()
 	fromURL, ok := mapping[fromEnv]
@@ -47,20 +54,9 @@ func PromoteService(cache cache.GitCache, token, service, fromEnv, toEnv, newBra
 		return fmt.Errorf("failed to commit and push branch for environment %v: %s", toEnv, err)
 	}
 
-	prInput, err := makePullRequestInput(fromEnv, fromURL, toEnv, toURL, newBranchName)
+	pr, err := createPullRequest(ctx, fromEnv, fromURL, toEnv, toURL, token, newBranchName)
 	if err != nil {
-		// TODO: improve this
-		return err
-	}
-	user, repo, err := util.ExtractUserAndRepo(toURL)
-	if err != nil {
-		// TODO: improve this
-		return err
-	}
-
-	pr, _, err := createClient(token).PullRequests.Create(ctx, fmt.Sprintf("%s/%s", user, repo), prInput)
-	if err != nil {
-		// TODO: improve this
+		// TODO: improve this error message
 		return err
 	}
 	log.Printf("created PR %d", pr.Number)
@@ -70,12 +66,7 @@ func PromoteService(cache cache.GitCache, token, service, fromEnv, toEnv, newBra
 // LoadMappingFromFile takes a filename with a YAML mapping of environment name
 // to git repository URLs.
 func LoadMappingFromFile(fname string) (map[string]string, error) {
-	expanded, err := homedir.Expand(fname)
-	if err != nil {
-		return nil, fmt.Errorf("failed to expand mapping filename: %w", err)
-	}
-
-	f, err := os.Open(expanded)
+	f, err := os.Open(fname)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +90,10 @@ func createClient(token string) *scm.Client {
 	return client
 }
 
-func makePullRequestInput(fromEnv, fromURL, toEnv, toURL, branchName string) (*scm.PullRequestInput, error) {
+// TODO: OptionFuncs for Base and Title?
+// TODO: For the Head, should this try and determine whether or not this is a
+// fork ("user" of both repoURLs) and if so, simplify the Head?
+func makePullRequestInput(fromEnv, fromURL, toEnv, branchName string) (*scm.PullRequestInput, error) {
 	title := fmt.Sprintf("promotion from %s to %s", fromEnv, toEnv)
 	fromUser, _, err := util.ExtractUserAndRepo(fromURL)
 	if err != nil {
@@ -111,4 +105,22 @@ func makePullRequestInput(fromEnv, fromURL, toEnv, toURL, branchName string) (*s
 		Base:  "master",
 		Body:  "this is a test body",
 	}, nil
+}
+
+func createPullRequest(ctx context.Context, fromEnv, fromURL, toEnv, toURL, token, newBranchName string) (*scm.PullRequest, error) {
+	prInput, err := makePullRequestInput(fromEnv, fromURL, toEnv, newBranchName)
+	if err != nil {
+		// TODO: improve this error message
+		return nil, err
+	}
+
+	user, repo, err := util.ExtractUserAndRepo(toURL)
+	if err != nil {
+		// TODO: improve this error message
+		return nil, err
+	}
+	// TODO: come up with a better way of generating the repo URL (this
+	// only works for GitHub)
+	pr, _, err := createClient(token).PullRequests.Create(ctx, fmt.Sprintf("%s/%s", user, repo), prInput)
+	return pr, err
 }
