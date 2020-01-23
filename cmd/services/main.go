@@ -74,7 +74,7 @@ var (
 			Name:     emailFlag,
 			Usage:    "the email to use for commits when creating branches",
 			Required: false,
-			EnvVars:  []string{"COMMIT_TOKEN"},
+			EnvVars:  []string{"COMMIT_EMAIL"},
 		},
 	}
 )
