@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/bigkevmcd/promote/pkg/cache"
-	"github.com/bigkevmcd/promote/pkg/promote"
+	"github.com/bigkevmcd/services/pkg/avancement"
+	"github.com/bigkevmcd/services/pkg/git"
 	"github.com/mitchellh/go-homedir"
 	"github.com/tcnksm/go-gitconfig"
 	"github.com/urfave/cli/v2"
@@ -15,6 +15,7 @@ import (
 
 const (
 	githubTokenFlag = "github-token"
+	branchNameFlag  = "branch-name"
 	fromFlag        = "from"
 	toFlag          = "to"
 	serviceFlag     = "service"
@@ -37,12 +38,12 @@ var (
 	promoteFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:     fromFlag,
-			Usage:    "source environment name",
+			Usage:    "source Git repository",
 			Required: true,
 		},
 		&cli.StringFlag{
 			Name:     toFlag,
-			Usage:    "destination environment name",
+			Usage:    "destination Git repository",
 			Required: true,
 		},
 		&cli.StringFlag{
@@ -50,12 +51,10 @@ var (
 			Usage:    "service name to promote",
 			Required: true,
 		},
-
 		&cli.StringFlag{
-			Name:     mappingFileFlag,
-			Value:    "~/.env-mapping",
-			Usage:    "mapping from environment to repository",
-			Required: false,
+			Name:  branchNameFlag,
+			Usage: "the name to use for the newly created branch",
+			Value: "test-branch",
 		},
 		&cli.StringFlag{
 			Name:     cacheDirFlag,
@@ -81,8 +80,8 @@ var (
 
 func main() {
 	app := &cli.App{
-		Name:  "promotion-tool",
-		Usage: "promote a file between two git repositories",
+		Name:        "services",
+		Description: "manage services lifecycle via GitOps",
 		Commands: []*cli.Command{
 			{
 				Name:   "promote",
@@ -105,7 +104,7 @@ func promoteAction(c *cli.Context) error {
 	toRepo := c.String(toFlag)
 	service := c.String(serviceFlag)
 	token := c.String(githubTokenFlag)
-	newBranchName := "testing"
+	newBranchName := c.String(branchNameFlag)
 
 	cacheDir, err := homedir.Expand(c.String(cacheDirFlag))
 	if err != nil {
@@ -114,23 +113,13 @@ func promoteAction(c *cli.Context) error {
 
 	user, email, err := credentials(c)
 	if err != nil {
-		return fmt.Errorf("unable to establish: %w", err)
+		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	cache, err := cache.NewLocalCache(cacheDir, user, email)
+	cache, err := git.NewLocalCache(cacheDir, user, email)
 	if err != nil {
 		return fmt.Errorf("failed to create a local cache in %v: %w", cacheDir, err)
 	}
-
-	mappingFilename, err := homedir.Expand(c.String(mappingFileFlag))
-	if err != nil {
-		return fmt.Errorf("failed to expand mapping file path: %w", err)
-	}
-	mapping, err := promote.LoadMappingFromFile(mappingFilename)
-	if err != nil {
-		return fmt.Errorf("failed to load the mappingfile %s: %w", mappingFilename, err)
-	}
-
-	return promote.PromoteService(cache, token, service, fromRepo, toRepo, newBranchName, mapping)
+	return avancement.New(cache, token).Promote(service, fromRepo, toRepo, newBranchName)
 }
 
 func credentials(c *cli.Context) (string, string, error) {

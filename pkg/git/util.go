@@ -1,4 +1,4 @@
-package cache
+package git
 
 import (
 	"net/url"

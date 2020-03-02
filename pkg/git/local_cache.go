@@ -1,4 +1,4 @@
-package cache
+package git
 
 import (
 	"context"
@@ -20,9 +20,12 @@ type userCredentials struct {
 }
 
 type LocalCache struct {
-	cacheDir    string
-	credentials userCredentials
+	cacheDir     string
+	credentials  userCredentials
+	cacheFactory cacheFactory
 }
+
+type cacheFactory func(cacheDir, repoURL string) (*git.Repository, string, error)
 
 // NewLocalCache creates a new LocalCache and ensures that the provided cacheDir
 // exists.
@@ -38,11 +41,11 @@ func NewLocalCache(cacheDir, name, email string) (*LocalCache, error) {
 			return nil, fmt.Errorf("error getting the cache dir: %w", err)
 		}
 	}
-	return &LocalCache{cacheDir: cacheDir, credentials: userCredentials{name: name, email: email}}, nil
+	return &LocalCache{cacheDir: cacheDir, credentials: userCredentials{name: name, email: email}, cacheFactory: openCacheRepository}, nil
 }
 
 func (l *LocalCache) ReadFileFromBranch(ctx context.Context, repoURL, filePath, branch string) ([]byte, error) {
-	r, repoCacheDir, err := openCacheRepository(l.cacheDir, repoURL)
+	r, repoCacheDir, err := l.cacheFactory(l.cacheDir, repoURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open cache repository %s, %s: %w", repoURL, branch, err)
 	}
@@ -66,7 +69,7 @@ func (l *LocalCache) ReadFileFromBranch(ctx context.Context, repoURL, filePath, 
 }
 
 func (l *LocalCache) WriteFileToBranchAndStage(ctx context.Context, repoURL, branch, filePath string, data []byte) error {
-	r, repoCacheDir, err := openCacheRepository(l.cacheDir, repoURL)
+	r, repoCacheDir, err := l.cacheFactory(l.cacheDir, repoURL)
 	if err != nil {
 		return fmt.Errorf("failed to open cache repository %s, %s: %w", repoURL, branch, err)
 	}
@@ -96,7 +99,7 @@ func (l *LocalCache) WriteFileToBranchAndStage(ctx context.Context, repoURL, bra
 }
 
 func (l *LocalCache) CreateAndCheckoutBranch(ctx context.Context, repoURL, fromBranch, newBranch string) error {
-	r, _, err := openCacheRepository(l.cacheDir, repoURL)
+	r, _, err := l.cacheFactory(l.cacheDir, repoURL)
 	if err != nil {
 		return fmt.Errorf("failed to open cache repository %s, %s: %w", repoURL, fromBranch, err)
 	}
@@ -123,7 +126,7 @@ func (l *LocalCache) CreateAndCheckoutBranch(ctx context.Context, repoURL, fromB
 }
 
 func (l *LocalCache) CommitAndPushBranch(ctx context.Context, repoURL, branch, message, token string) error {
-	r, _, err := openCacheRepository(l.cacheDir, repoURL)
+	r, _, err := l.cacheFactory(l.cacheDir, repoURL)
 	if err != nil {
 		return fmt.Errorf("failed to open cache repository %s, %s: %w", repoURL, branch, err)
 	}
@@ -145,6 +148,7 @@ func (l *LocalCache) CommitAndPushBranch(ctx context.Context, repoURL, branch, m
 
 	err = r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
+			// This isn't used by GitHub.
 			Username: "promotion",
 			Password: token,
 		},
