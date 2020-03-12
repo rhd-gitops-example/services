@@ -1,119 +1,173 @@
 package mock
 
 import (
-	"context"
-	"reflect"
+	"io"
+	"path"
 	"strings"
 	"testing"
+
+	"github.com/rhd-gitops-example/services/pkg/git"
 )
 
-type MockCache struct {
-	sourceFiles    map[string][]byte
-	addRepoFileErr error
+type Repository struct {
+	currentBranch string
+	knownBranches []string
+	cloned        bool
 
-	writtenFiles map[string][]byte
-	writeFileErr error
+	files     []string
+	localPath string
 
-	branches             map[string][]string
-	createAndCheckoutErr error
+	cloneErr    error
+	checkoutErr error
 
-	commits   map[string][]commit
+	branchesCreated []string
+
+	copiedFiles []string
+	copyFileErr error
+
+	commits   []string
 	commitErr error
-}
 
-type commit struct {
-	msg    string
-	branch string
+	pushedBranches []string
+	pushErr        error
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
 // in-memory
-func New() *MockCache {
-	return &MockCache{
-		sourceFiles:  make(map[string][]byte),
-		writtenFiles: make(map[string][]byte),
-		branches:     make(map[string][]string),
-		commits:      make(map[string][]commit),
+func New(localPath string, branches ...string) *Repository {
+	return &Repository{localPath: localPath, currentBranch: branches[0], knownBranches: branches}
+}
+
+// Checkout fulfils the git.Repo interface.
+func (m *Repository) Checkout(branch string) error {
+	if hasString(branch, m.knownBranches) {
+		m.currentBranch = branch
 	}
+	return m.checkoutErr
 }
 
-// ReadFileFromBranch fulfils the git.Cache interface.
-func (m *MockCache) ReadFileFromBranch(ctx context.Context, repoURL, filePath, branch string) ([]byte, error) {
-	return m.sourceFiles[key(repoURL, branch, filePath)], m.addRepoFileErr
-}
-
-// CreateAndCheckoutBranch fulfils the git.Cache interface.
-func (m *MockCache) CreateAndCheckoutBranch(ctx context.Context, repoURL, fromBranch, newBranch string) error {
-	branches, ok := m.branches[repoURL]
-	if !ok {
-		branches = make([]string, 0)
+// CheckoutAndCreate fulfils the git.Repo interface.
+func (m *Repository) CheckoutAndCreate(branch string) error {
+	if m.branchesCreated == nil {
+		m.branchesCreated = []string{}
 	}
-	branches = append(branches, key(fromBranch, newBranch))
-	m.branches[repoURL] = branches
-	return m.createAndCheckoutErr
+	m.branchesCreated = append(m.branchesCreated, key(m.currentBranch, branch))
+	m.currentBranch = branch
+	return m.checkoutErr
 }
 
-// WriteFileToBranchAndStage fulfils the git.Cache interface.
-func (m *MockCache) WriteFileToBranchAndStage(ctx context.Context, repoURL, branch, filePath string, data []byte) error {
-	m.writtenFiles[key(repoURL, branch, filePath)] = data
-	return m.writeFileErr
+// Clone fulfils the git.Repo interface.
+func (m *Repository) Clone() error {
+	m.cloned = true
+	return m.cloneErr
 }
 
-// CommitAndPushBranch fulfils the git.Cache interface.
-func (m *MockCache) CommitAndPushBranch(ctx context.Context, repoURL, branch, message, token string) error {
-	k := key(repoURL, branch)
-	commits, ok := m.commits[k]
-	if !ok {
-		commits = make([]commit, 0)
+// StageFiles fulfils the git.Repo interface.
+func (m *Repository) StageFiles(filenames ...string) error {
+	return nil
+}
+
+// Commit fulfils the git.Repo interface.
+func (m *Repository) Commit(msg string, author *git.Author) error {
+	if m.commits == nil {
+		m.commits = []string{}
 	}
-	commits = append(commits, commit{message, token})
-	m.commits[k] = commits
+	m.commits = append(m.commits, key(m.currentBranch, msg, author.Token))
 	return m.commitErr
 }
 
-func (m *MockCache) AddRepoFile(repoURL, branch, path string, body []byte) {
-	m.sourceFiles[key(repoURL, branch, path)] = body
+// Push fulfils the git.Repo interface.
+func (m *Repository) Push(branch string) error {
+	if m.pushedBranches == nil {
+		m.pushedBranches = []string{}
+	}
+	m.pushedBranches = append(m.pushedBranches, branch)
+	return m.pushErr
 }
 
-func (m *MockCache) AssertBranchCreated(t *testing.T, repoURL, fromBranch, newBranch string) {
-	t.Helper()
-	branches, ok := m.branches[repoURL]
-	if !ok {
-		t.Fatalf("no branches created for %s", repoURL)
+// CopyFile fulfils the git.Repo interface.
+func (m *Repository) CopyFile(src, dst string) error {
+	if m.copiedFiles == nil {
+		m.copiedFiles = []string{}
 	}
-	want := key(fromBranch, newBranch)
-	for _, b := range branches {
-		if b == want {
-			return
+	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, path.Join(m.localPath, dst)))
+	return m.copyFileErr
+
+}
+
+// WriteFile fulfils the git.Repo interface.
+func (m *Repository) WriteFile(src io.Reader, dst string) error {
+	return nil
+}
+
+// Walk fulfils the git.Repo interface.
+func (m *Repository) Walk(filePath string, cb func(string, string) error) error {
+	if m.files == nil {
+		return nil
+	}
+	for _, f := range m.files {
+		prefix := m.localPath + "/"
+		if strings.HasPrefix(f, prefix) {
+			err := cb(prefix, strings.TrimPrefix(f, prefix))
+			if err != nil {
+				return err
+			}
 		}
 	}
-	t.Fatalf("branch %s from %s not created in repo %s", newBranch, fromBranch, repoURL)
+	return nil
 }
 
-func (m *MockCache) AssertFileWrittenToBranch(t *testing.T, repoURL, branch, path string, body []byte) {
-	t.Helper()
-	contentsKey := key(repoURL, branch, path)
-	if !reflect.DeepEqual(m.writtenFiles[contentsKey], body) {
-		t.Fatalf("file written to %s got %v, want %v", contentsKey, m.writtenFiles[contentsKey], body)
+// AddFiles is part of the mock implementation, it records filenames so that
+// they're used in the Walk implementation.
+func (m *Repository) AddFiles(names ...string) {
+	if m.files == nil {
+		m.files = []string{}
+	}
+	for _, f := range names {
+		m.files = append(m.files, path.Join(m.localPath, f))
 	}
 }
 
-func (m *MockCache) AssertCommitAndPush(t *testing.T, repoURL, branch, message, token string) {
-	t.Helper()
-	k := key(repoURL, branch)
-	commits, ok := m.commits[k]
-	if !ok {
-		t.Fatalf("branch %s not pushed to repo %s", branch, repoURL)
+// AssertBranchCreated asserts that the named branch was created from the from
+// branch, using the `CheckoutAndCreate` implementation.
+func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
+	if !hasString(key(from, name), m.branchesCreated) {
+		t.Fatalf("branch %s was not created from %s", name, from)
 	}
-	want := commit{message, token}
-	for _, c := range commits {
-		if c == want {
-			return
-		}
+}
+
+// AssertFileCopiedInBranch asserts the filename was copied from and to in a
+// branch.
+func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
+	if !hasString(key(branch, from, name), m.copiedFiles) {
+		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
 	}
-	t.Fatalf("commit %#v not created in repo %s", want, repoURL)
+}
+
+// AssertCommit asserts that a commit was created for the named branch with the
+// message and auth token.
+func (m *Repository) AssertCommit(t *testing.T, branch, msg string, a *git.Author) {
+	if !hasString(key(branch, msg, a.Token), m.commits) {
+		t.Fatalf("no matching commit %#v in branch %s using token %s", msg, branch, a.Token)
+	}
+}
+
+// AssertPush asserts that the branch was pushed.
+func (m *Repository) AssertPush(t *testing.T, branch string) {
+	if !hasString(branch, m.pushedBranches) {
+		t.Fatalf("branch %s was not pushed", branch)
+	}
 }
 
 func key(v ...string) string {
 	return strings.Join(v, ":")
+}
+
+func hasString(find string, list []string) bool {
+	for _, v := range list {
+		if find == v {
+			return true
+		}
+	}
+	return false
 }

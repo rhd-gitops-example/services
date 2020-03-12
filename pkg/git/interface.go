@@ -1,10 +1,29 @@
 package git
 
-import "context"
+import "io"
 
-type Cache interface {
-	ReadFileFromBranch(ctx context.Context, repoURL, filePath, branch string) ([]byte, error)
-	CreateAndCheckoutBranch(ctx context.Context, repoURL, fromBranch, newBranch string) error
-	WriteFileToBranchAndStage(ctx context.Context, repoURL, branch, filePath string, data []byte) error
-	CommitAndPushBranch(ctx context.Context, repoURL, branch, message, token string) error
+// Destination is implemented by values that can have files written and stored
+// permanently.
+type Destination interface {
+	CopyFile(src, dst string) error
+	WriteFile(src io.Reader, dst string) error
+}
+
+// Source is implemented by values that can provide a list of files for reading
+// from.
+type Source interface {
+	// Walk walks the repository tree, calling the callback with the prefix and
+	// filename.
+	Walk(path string, cb func(prefix, name string) error) error
+}
+
+type Repo interface {
+	Destination
+	Source
+	Clone() error
+	Checkout(branch string) error
+	CheckoutAndCreate(branch string) error
+	StageFiles(filenames ...string) error
+	Commit(msg string, author *Author) error
+	Push(branch string) error
 }

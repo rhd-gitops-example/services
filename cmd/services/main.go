@@ -19,7 +19,6 @@ const (
 	fromFlag        = "from"
 	toFlag          = "to"
 	serviceFlag     = "service"
-	mappingFileFlag = "mapping-file"
 	cacheDirFlag    = "cache-dir"
 	nameFlag        = "commit-name"
 	emailFlag       = "commit-email"
@@ -103,7 +102,6 @@ func promoteAction(c *cli.Context) error {
 	fromRepo := c.String(fromFlag)
 	toRepo := c.String(toFlag)
 	service := c.String(serviceFlag)
-	token := c.String(githubTokenFlag)
 	newBranchName := c.String(branchNameFlag)
 
 	cacheDir, err := homedir.Expand(c.String(cacheDirFlag))
@@ -111,40 +109,37 @@ func promoteAction(c *cli.Context) error {
 		return fmt.Errorf("failed to expand cacheDir path: %w", err)
 	}
 
-	user, email, err := credentials(c)
+	author, err := newAuthor(c)
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	cache, err := git.NewLocalCache(cacheDir, user, email)
-	if err != nil {
-		return fmt.Errorf("failed to create a local cache in %v: %w", cacheDir, err)
-	}
-	return avancement.New(cache, token).Promote(service, fromRepo, toRepo, newBranchName)
+	return avancement.New(cacheDir, author).Promote(service, fromRepo, toRepo, newBranchName)
 }
 
-func credentials(c *cli.Context) (string, string, error) {
+func newAuthor(c *cli.Context) (*git.Author, error) {
 	name := c.String(nameFlag)
 	email := c.String(emailFlag)
+	token := c.String(githubTokenFlag)
 
 	var err error
 	if name == "" {
 		name, err = gitconfig.Username()
 		if err != nil {
-			return "", "", err
+			return nil, err
 		}
 	}
 
 	if email == "" {
 		email, err = gitconfig.Email()
 		if err != nil {
-			return "", "", err
+			return nil, err
 		}
 	}
 
 	// TODO: make this a multierror with both errors?
 	if name == "" || email == "" {
-		return "", "", errors.New("unable to identify user and email for commits")
+		return nil, errors.New("unable to identify user and email for commits")
 	}
 
-	return name, email, nil
+	return &git.Author{Name: name, Email: email, Token: token}, nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
-
+	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/rhd-gitops-example/services/pkg/git/mock"
 )
 
@@ -14,27 +14,63 @@ const (
 	staging = "https://example.com/testing/staging-env"
 )
 
-var testBody = []byte("this is the body")
-
 func TestPromoteWithSuccess(t *testing.T) {
-	filePath := pathForService("my-service")
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	client, _ := fakescm.NewDefault()
 	fakeClientFactory := func(s string) *scm.Client {
 		return client
 	}
-
-	mc := mock.New()
-	mc.AddRepoFile(dev, "master", filePath, testBody)
-
-	sm := New(mc, "testing")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
 	sm.clientFactory = fakeClientFactory
+	sm.repoFactory = func(url, _ string) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/my-service/deploy/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, "my-branch")
+	err := sm.Promote("my-service", dev, staging, dstBranch)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mc.AssertBranchCreated(t, staging, "master", "my-branch")
-	mc.AssertFileWrittenToBranch(t, staging, "my-branch", filePath, testBody)
-	mc.AssertCommitAndPush(t, staging, "my-branch", "this is a test commit", "testing")
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/my-service/deploy/myfile.yaml", "/staging/my-service/deploy/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
+}
+
+func TestAddCredentials(t *testing.T) {
+	testUser := &git.Author{Name: "Test User", Email: "test@example.com", Token: "test-token"}
+	tests := []struct {
+		repoURL string
+		a       *git.Author
+		want    string
+	}{
+		{"https://testing.example.com/test", testUser, "https://promotion:test-token@testing.example.com/test"},
+		{"https://promotion:my-token@testing.example.com/test", testUser, "https://promotion:my-token@testing.example.com/test"},
+		{"https://testing:atoken@testing.example.com/test", testUser, "https://testing:atoken@testing.example.com/test"},
+	}
+
+	for i, tt := range tests {
+		got, err := addCredentialsIfNecessary(tt.repoURL, tt.a)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != tt.want {
+			t.Errorf("addCredentials() %d got %s, want %s", i, got, tt.want)
+		}
+	}
+}
+
+func mustAddCredentials(t *testing.T, repoURL string, a *git.Author) string {
+	u, err := addCredentialsIfNecessary(repoURL, a)
+	if err != nil {
+		t.Fatalf("failed to add credentials to %s: %e", repoURL, err)
+	}
+	return u
 }
