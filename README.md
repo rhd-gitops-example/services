@@ -1,4 +1,4 @@
-# services
+# services [![Build Status](https://travis-ci.org/rhd-gitops-example/services.svg?branch=master)](https://travis-ci.org/rhd-gitops-example/services)
 
 A tool for promoting between GitHub repositories.
 
