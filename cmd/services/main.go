@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/bigkevmcd/services/pkg/avancement"
-	"github.com/bigkevmcd/services/pkg/git"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rhd-gitops-example/services/pkg/avancement"
+	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/tcnksm/go-gitconfig"
 	"github.com/urfave/cli/v2"
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 
-	"github.com/bigkevmcd/services/pkg/git/mock"
+	"github.com/rhd-gitops-example/services/pkg/git/mock"
 )
 
 const (

@@ -3,8 +3,8 @@ package avancement
 import (
 	"fmt"
 
-	"github.com/bigkevmcd/services/pkg/util"
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/rhd-gitops-example/services/pkg/util"
 )
 
 // TODO: OptionFuncs for Base and Title?

@@ -1,5 +1,5 @@
 package mock
 
-import "github.com/bigkevmcd/services/pkg/git"
+import "github.com/rhd-gitops-example/services/pkg/git"
 
 var _ git.Cache = (*MockCache)(nil)
