@@ -7,8 +7,8 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 
-	"github.com/bigkevmcd/services/pkg/git"
-	"github.com/bigkevmcd/services/pkg/util"
+	"github.com/rhd-gitops-example/services/pkg/git"
+	"github.com/rhd-gitops-example/services/pkg/util"
 )
 
 type ServiceManager struct {
