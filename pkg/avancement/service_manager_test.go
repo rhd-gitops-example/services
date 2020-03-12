@@ -1,7 +1,6 @@
 package avancement
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -19,7 +18,7 @@ var testBody = []byte("this is the body")
 
 func TestPromoteWithSuccess(t *testing.T) {
 	filePath := pathForService("my-service")
-	client, data := fakescm.NewDefault()
+	client, _ := fakescm.NewDefault()
 	fakeClientFactory := func(s string) *scm.Client {
 		return client
 	}
