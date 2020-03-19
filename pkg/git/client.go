@@ -10,6 +10,7 @@ import (
 
 // CreateGitHubClient creates and returns a go-scm GitHub client, using the provided
 // oauth2 token.
+// TODO: This should probably use https://github.com/jenkins-x/go-scm/tree/master/scm/factory
 func CreateGitHubClient(token string) *scm.Client {
 	client := github.NewDefault()
 	ts := oauth2.StaticTokenSource(

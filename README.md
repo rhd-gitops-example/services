@@ -28,3 +28,12 @@ This will _copy_ a single file `deployment.txt` from `service-a` in `first-envir
 ```shell
 $ go test ./...
 ```
+
+To run the complete integration tests, including pushing to the Git repository:
+
+```shell
+$ TEST_GITHUB_TOKEN=<a valid github auth token> go test ./...
+```
+
+Note that the tests in pkg/git/repository_test.go will clone and manipulate a
+remote Git repository locally.
