@@ -6,6 +6,8 @@ This is a pre-alpha PoC for promoting versions of files between environments, re
 
 ## Building
 
+You need Go version 1.14 to build this project.
+
 ```shell
 $ go build ./cmd/services
 ```
