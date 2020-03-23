@@ -14,7 +14,7 @@ import (
 	"github.com/rhd-gitops-example/services/test"
 )
 
-const testRepository = "https://github.com/bigkevmcd/env-staging.git"
+const testRepository = "https://github.com/mnuttall/staging.git"
 
 func TestRepoName(t *testing.T) {
 	nameTests := []struct {
@@ -22,8 +22,8 @@ func TestRepoName(t *testing.T) {
 		wantName string
 		wantErr  string
 	}{
-		{testRepository, "env-staging", ""},
-		{"https://github.com/bigkevmcd", "", "could not identify repo: https://github.com/bigkevmcd"},
+		{testRepository, "staging", ""},
+		{"https://github.com/mnuttall", "", "could not identify repo: https://github.com/mnuttall"},
 	}
 
 	for _, tt := range nameTests {
@@ -48,7 +48,7 @@ func TestCloneCreatesDirectory(t *testing.T) {
 	err = r.Clone()
 	assertNoError(t, err)
 
-	contents, err := ioutil.ReadFile(path.Join(tempDir, "path", "env-staging/service-a/deployment.txt"))
+	contents, err := ioutil.ReadFile(path.Join(tempDir, "path", "staging/services/service-a/base/config/deployment.txt"))
 	assertNoError(t, err)
 
 	want := "This is the staging version of this file.\n"
@@ -61,7 +61,7 @@ func TestClone(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
 
-	contents, err := ioutil.ReadFile(path.Join(r.LocalPath, "env-staging/service-a/deployment.txt"))
+	contents, err := ioutil.ReadFile(path.Join(r.LocalPath, "staging/services/service-a/base/config/deployment.txt"))
 	assertNoError(t, err)
 	want := "This is the staging version of this file.\n"
 	if diff := cmp.Diff(want, string(contents)); diff != "" {
@@ -69,6 +69,7 @@ func TestClone(t *testing.T) {
 	}
 }
 
+/* TestCheckout relates to earlier behaviour that dealt with branches within repos. We can revisit this.
 func TestCheckout(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
@@ -84,18 +85,29 @@ func TestCheckout(t *testing.T) {
 		t.Fatalf("failed to read file: %s", diff)
 	}
 }
+*/
 
 func TestWalk(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
 
 	visited := []string{}
-	err := r.Walk("service-a", func(prefix, name string) error {
+	err := r.Walk("services/service-a", func(prefix, name string) error {
 		visited = append(visited, name)
 		return nil
 	})
+
 	assertNoError(t, err)
-	want := []string{"service-a/deployment.txt", "service-a/files/myfile.txt"}
+	want := []string{
+		"service-a/base/config/300-deployment.yaml",
+		"service-a/base/config/310-service.yaml",
+		"service-a/base/config/deployment.txt",
+		"service-a/base/config/kustomization.yaml",
+		"service-a/base/kustomization.yaml",
+		"service-a/overlays/kustomization.yaml",
+		"service-a/overlays/staging-deployment.yaml",
+		"service-a/overlays/staging-service.yaml",
+	}
 	if diff := cmp.Diff(want, visited); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
 	}
@@ -105,17 +117,27 @@ func TestWriteFile(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
 
-	err := r.WriteFile(strings.NewReader("this is some text"), "service-a/new-file.txt")
+	err := r.WriteFile(strings.NewReader("this is some text"), "services/service-a/base/config/new-file.txt")
 	assertNoError(t, err)
 
 	visited := []string{}
-	err = r.Walk("service-a", func(prefix, name string) error {
+	err = r.Walk("services/service-a", func(prefix, name string) error {
 		visited = append(visited, name)
 		return nil
 	})
 	assertNoError(t, err)
 	sort.Strings(visited)
-	want := []string{"service-a/deployment.txt", "service-a/files/myfile.txt", "service-a/new-file.txt"}
+	want := []string{
+		"service-a/base/config/300-deployment.yaml",
+		"service-a/base/config/310-service.yaml",
+		"service-a/base/config/deployment.txt",
+		"service-a/base/config/kustomization.yaml",
+		"service-a/base/config/new-file.txt",
+		"service-a/base/kustomization.yaml",
+		"service-a/overlays/kustomization.yaml",
+		"service-a/overlays/staging-deployment.yaml",
+		"service-a/overlays/staging-service.yaml",
+	}
 	if diff := cmp.Diff(want, visited); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
 	}
@@ -133,17 +155,28 @@ func TestCopyFile(t *testing.T) {
 	err = tmpfile.Close()
 	assertNoError(t, err)
 
-	err = r.CopyFile(tmpfile.Name(), "service-a/copy/copied.txt")
+	err = r.CopyFile(tmpfile.Name(), "services/service-a/copy/copied.txt")
 	assertNoError(t, err)
 
 	visited := []string{}
-	err = r.Walk("service-a", func(prefix, name string) error {
+	err = r.Walk("services/service-a", func(prefix, name string) error {
 		visited = append(visited, name)
 		return nil
 	})
+
 	assertNoError(t, err)
 	sort.Strings(visited)
-	want := []string{"service-a/copy/copied.txt", "service-a/deployment.txt", "service-a/files/myfile.txt"}
+	want := []string{
+		"service-a/base/config/300-deployment.yaml",
+		"service-a/base/config/310-service.yaml",
+		"service-a/base/config/deployment.txt",
+		"service-a/base/config/kustomization.yaml",
+		"service-a/base/kustomization.yaml",
+		"service-a/copy/copied.txt",
+		"service-a/overlays/kustomization.yaml",
+		"service-a/overlays/staging-deployment.yaml",
+		"service-a/overlays/staging-service.yaml",
+	}
 	if diff := cmp.Diff(want, visited); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
 	}
@@ -162,14 +195,14 @@ func TestCopyWithMissingSource(t *testing.T) {
 func TestStageFiles(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
-	err := r.WriteFile(strings.NewReader("this is some text"), "service-a/new-file.txt")
+	err := r.WriteFile(strings.NewReader("this is some text"), "services/service-a/new-file.txt")
 	assertNoError(t, err)
 
-	err = r.StageFiles("service-a/new-file.txt")
+	err = r.StageFiles("services/service-a/new-file.txt")
 	assertNoError(t, err)
 
-	out := assertExecGit(t, r.repoPath("service-a"), "status", "--porcelain")
-	want := "A  service-a/new-file.txt\n"
+	out := assertExecGit(t, r.repoPath("services/service-a"), "status", "--porcelain")
+	want := "A  services/service-a/new-file.txt\n"
 	if diff := cmp.Diff(want, string(out)); diff != "" {
 		t.Fatalf("file status not modified: %s", diff)
 	}
@@ -184,15 +217,15 @@ func TestStageFiles(t *testing.T) {
 func TestCommit(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
-	err := r.WriteFile(strings.NewReader("this is some text"), "service-a/new-file.txt")
+	err := r.WriteFile(strings.NewReader("this is some text"), "services/service-a/new-file.txt")
 	assertNoError(t, err)
-	err = r.StageFiles("service-a/new-file.txt")
+	err = r.StageFiles("services/service-a/new-file.txt")
 	assertNoError(t, err)
 
 	err = r.Commit("this is a test commit", &Author{Name: "Test User", Email: "testing@example.com"})
 	assertNoError(t, err)
 
-	out := strings.Split(string(assertExecGit(t, r.repoPath("service-a"), "log", "-n", "1")), "\n")
+	out := strings.Split(string(assertExecGit(t, r.repoPath("services/service-a"), "log", "-n", "1")), "\n")
 	want := []string{"Author: Test User <testing@example.com>", "    this is a test commit"}
 	if diff := cmp.Diff(want, out, cmpopts.IgnoreSliceElements(func(s string) bool {
 		return strings.HasPrefix(s, "commit") || strings.HasPrefix(s, "Date:") || s == ""
@@ -209,9 +242,9 @@ func TestPush(t *testing.T) {
 	defer cleanup()
 	err := r.CheckoutAndCreate("my-new-branch")
 	assertNoError(t, err)
-	err = r.WriteFile(strings.NewReader("this is some text"), "service-a/new-file.txt")
+	err = r.WriteFile(strings.NewReader("this is some text"), "services/service-a/new-file.txt")
 	assertNoError(t, err)
-	err = r.StageFiles("service-a/new-file.txt")
+	err = r.StageFiles("services/service-a/new-file.txt")
 	assertNoError(t, err)
 	err = r.Commit("this is a test commit", &Author{Name: "Test User", Email: "testing@example.com"})
 	assertNoError(t, err)
@@ -233,7 +266,7 @@ func authenticatedURL(t *testing.T) string {
 	t.Helper()
 	parsed, err := url.Parse(testRepository)
 	if err != nil {
-		t.Fatalf("failed to parse git repo url %v: %w", testRepository, err)
+		t.Fatalf("failed to parse git repo url %v: %v", testRepository, err)
 	}
 	parsed.User = url.UserPassword("promotion", authToken())
 	return parsed.String()
