@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,7 +14,7 @@ import (
 
 func TestCopyService(t *testing.T) {
 	s := &mockSource{localPath: "/tmp/testing"}
-	files := []string{"service-a/my-system/my-file.yaml", "service-a/my-system/this-file.yaml"}
+	files := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
@@ -34,13 +35,26 @@ type mockSource struct {
 	localPath string
 }
 
-func (s *mockSource) Walk(filePath string, cb func(string, string) error) error {
+// Walk: a mock function to emulate what happens in Repository.Walk()
+// The Mock version is different: it iterates over mockSource.files[] and then drives
+// the visitor callback in CopyService() as usual.
+//
+// To preserve the same behaviour, we see that Repository Walk receives /full/path/to/repo/services/service-name
+// and then calls filePath.Walk() on /full/path/to/repo/services/ .
+// When CopyService() drives Walk(), 'base' is typically services/service-name
+// Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
+func (s *mockSource) Walk(base string, cb func(string, string) error) error {
 	if s.files == nil {
 		return nil
 	}
+
 	for _, f := range s.files {
-		if strings.HasPrefix(f, path.Join(s.localPath, filePath)) {
-			err := cb(f, strings.TrimPrefix(f, s.localPath+"/"))
+		if strings.HasPrefix(f, path.Join(s.localPath, base)) {
+			splitString := filepath.Dir(base) + "/"
+			splitPoint := strings.Index(f, splitString) + len(splitString)
+			prefix := f[:splitPoint]
+			name := f[splitPoint:]
+			err := cb(prefix, name)
 			if err != nil {
 				return err
 			}

@@ -51,7 +51,7 @@ const fromBranch = "master"
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(service, fromURL, toURL, newBranchName string) error {
+func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName string) error {
 	source, err := s.checkoutSourceRepo(fromURL, fromBranch)
 	if err != nil {
 		return err
@@ -61,7 +61,8 @@ func (s *ServiceManager) Promote(service, fromURL, toURL, newBranchName string) 
 		return fmt.Errorf("failed to checkout repo: %w", err)
 	}
 
-	copied, err := git.CopyService(service, source, destination)
+	copied, err := git.CopyService(serviceName, source, destination)
+	// copied, err := git.CopyService(service, source, destination)
 	if err != nil {
 		return fmt.Errorf("failed to copy service: %w", err)
 	}

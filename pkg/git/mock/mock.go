@@ -3,6 +3,7 @@ package mock
 import (
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -100,15 +101,33 @@ func (m *Repository) WriteFile(src io.Reader, dst string) error {
 	return nil
 }
 
-// Walk fulfils the git.Repo interface.
-func (m *Repository) Walk(filePath string, cb func(string, string) error) error {
+// Walk fulfils the git.Repo interface. It's a mock function to emulate what happens in Repository.Walk()
+// The Mock version is different: it iterates over mockSource.files[] and then drives
+// the visitor callback in CopyService() as usual.
+//
+// To preserve the same behaviour, we see that Repository Walk receives /full/path/to/repo/services/service-name
+// and then calls filePath.Walk() on /full/path/to/repo/services/ .
+// When CopyService() drives Walk(), 'base' is typically services/service-name
+// Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
+func (m *Repository) Walk(base string, cb func(string, string) error) error {
 	if m.files == nil {
 		return nil
 	}
+
 	for _, f := range m.files {
-		prefix := m.localPath + "/"
-		if strings.HasPrefix(f, prefix) {
-			err := cb(prefix, strings.TrimPrefix(f, prefix))
+		if strings.HasPrefix(f, path.Join(m.localPath, base)) {
+
+			// First value should end '/services'
+			// Second value should start service-name/
+
+			/*
+				If 'base' is in f then call cb on (f up to last / in base, f from that point)
+			*/
+			splitString := filepath.Dir(base) + "/"
+			splitPoint := strings.Index(f, splitString) + len(splitString)
+			prefix := f[:splitPoint]
+			name := f[splitPoint:]
+			err := cb(prefix, name)
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,7 @@
 package avancement
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -31,15 +32,16 @@ func TestPromoteWithSuccess(t *testing.T) {
 	sm.repoFactory = func(url, _ string) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
-	devRepo.AddFiles("/my-service/deploy/myfile.yaml")
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
+	fmt.Println("*** Promoting my-service ***")
 	err := sm.Promote("my-service", dev, staging, dstBranch)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/my-service/deploy/myfile.yaml", "/staging/my-service/deploy/myfile.yaml")
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 }
