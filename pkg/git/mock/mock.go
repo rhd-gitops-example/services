@@ -116,13 +116,6 @@ func (m *Repository) Walk(base string, cb func(string, string) error) error {
 
 	for _, f := range m.files {
 		if strings.HasPrefix(f, path.Join(m.localPath, base)) {
-
-			// First value should end '/services'
-			// Second value should start service-name/
-
-			/*
-				If 'base' is in f then call cb on (f up to last / in base, f from that point)
-			*/
 			splitString := filepath.Dir(base) + "/"
 			splitPoint := strings.Index(f, splitString) + len(splitString)
 			prefix := f[:splitPoint]

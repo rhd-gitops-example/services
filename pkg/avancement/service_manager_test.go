@@ -1,7 +1,6 @@
 package avancement
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -34,7 +33,6 @@ func TestPromoteWithSuccess(t *testing.T) {
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	fmt.Println("*** Promoting my-service ***")
 	err := sm.Promote("my-service", dev, staging, dstBranch)
 	if err != nil {
 		t.Fatal(err)
