@@ -39,6 +39,7 @@ func pathValidForPromotion(serviceName, filePath string) bool {
 	return validPath
 }
 
+// pathForServiceConfig defines where in a 'gitops' repository the config for a given service should live.
 func pathForServiceConfig(serviceName string) string {
 	return path.Join("services", serviceName)
 }
