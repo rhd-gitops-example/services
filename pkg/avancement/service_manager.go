@@ -62,7 +62,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 	}
 
 	copied, err := git.CopyService(serviceName, source, destination)
-	// copied, err := git.CopyService(service, source, destination)
+
 	if err != nil {
 		return fmt.Errorf("failed to copy service: %w", err)
 	}

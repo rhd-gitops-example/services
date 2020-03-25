@@ -23,7 +23,7 @@ $ ./services promote --from https://github.com/organisation/first-environment.gi
 
 If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
 
-This will _copy_ a single file `deployment.txt` from `service-a` in `first-environment` to `service-a` in `second-environment`, commit and push, and open a PR for the change.
+This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
 
 ## Testing
 

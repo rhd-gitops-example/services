@@ -20,10 +20,7 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 	err := source.Walk(filePath, func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
 		destPath := path.Join("services", name)
-
-		// Only copy files in services/serviceName/base/config/*
-		filterPath := path.Join("services", serviceName, "base/config")
-		if strings.HasPrefix(destPath, filterPath) {
+		if pathValidForPromotion(serviceName, destPath) {
 			err := dest.CopyFile(sourcePath, destPath)
 			copied = append(copied, destPath)
 			return err
@@ -31,4 +28,13 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 		return nil
 	})
 	return copied, err
+}
+
+// pathValidForPromotion()
+//  For a given serviceName, only files in services/serviceName/base/config/* are valid for promotion
+//
+func pathValidForPromotion(serviceName, filePath string) bool {
+	filterPath := path.Join("services", serviceName, "base/config")
+	validPath := strings.HasPrefix(filePath, filterPath)
+	return validPath
 }

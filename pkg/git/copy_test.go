@@ -30,6 +30,43 @@ func TestCopyService(t *testing.T) {
 	}
 }
 
+func TestPathValidForPromotion(t *testing.T) {
+
+	serviceBeingPromoted := "service-name"
+	servicesNotBeingPromoted := []string{"svc", "base", "serviceName", "services"}
+	promoteTheseWhenServiceNameIsRight := []string{
+		"services/service-name/base/config/kustomization.yaml",
+		"services/service-name/base/config/deployment.yaml",
+		"services/service-name/base/config/dir/below/it/may/contain/important.yaml",
+	}
+	for _, filePath := range promoteTheseWhenServiceNameIsRight {
+		if !pathValidForPromotion(serviceBeingPromoted, filePath) {
+			t.Fatalf("Valid path for promotion for %s incorrectly rejected: %s", serviceBeingPromoted, filePath)
+		}
+		for _, wrongService := range servicesNotBeingPromoted {
+			if pathValidForPromotion(wrongService, filePath) {
+				t.Fatalf("Path for service %s incorrectly accepted for promotion: %s", wrongService, filePath)
+			}
+		}
+	}
+
+	// These paths should never be promoted
+	badServiceNames := []string{"svc", "badService"}
+	neverPromoteThese := []string{
+		"services/svc/overlays/kustomization.yaml",
+		"services/svc/kustomization.yaml",
+		"svc/base/config/deployment.yaml",
+		"services/badService/any/other/path/resource.yaml",
+	}
+	for _, badPath := range neverPromoteThese {
+		for _, badServiceName := range badServiceNames {
+			if pathValidForPromotion(badServiceName, badPath) {
+				t.Fatalf("Invalid path %s for promotion of service %s incorrectly accepted", badPath, badServiceName)
+			}
+		}
+	}
+}
+
 type mockSource struct {
 	files     []string
 	localPath string
