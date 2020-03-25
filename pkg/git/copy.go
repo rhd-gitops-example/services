@@ -2,6 +2,7 @@ package git
 
 import (
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -34,12 +35,12 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 //  For a given serviceName, only files in services/serviceName/base/config/* are valid for promotion
 //
 func pathValidForPromotion(serviceName, filePath string) bool {
-	filterPath := path.Join("services", serviceName, "base/config")
+	filterPath := filepath.Join(pathForServiceConfig(serviceName), "base", "config")
 	validPath := strings.HasPrefix(filePath, filterPath)
 	return validPath
 }
 
 // pathForServiceConfig defines where in a 'gitops' repository the config for a given service should live.
 func pathForServiceConfig(serviceName string) string {
-	return path.Join("services", serviceName)
+	return filepath.Join("services", serviceName)
 }
