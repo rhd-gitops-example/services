@@ -14,12 +14,12 @@ import (
 func CopyService(serviceName string, source Source, dest Destination) ([]string, error) {
 
 	// filePath defines the root folder for serviceName's config in the repository
-	filePath := path.Join("services", serviceName)
+	filePath := pathForServiceConfig(serviceName)
 
 	copied := []string{}
 	err := source.Walk(filePath, func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
-		destPath := path.Join("services", name)
+		destPath := pathForServiceConfig(name)
 		if pathValidForPromotion(serviceName, destPath) {
 			err := dest.CopyFile(sourcePath, destPath)
 			copied = append(copied, destPath)
@@ -37,4 +37,8 @@ func pathValidForPromotion(serviceName, filePath string) bool {
 	filterPath := path.Join("services", serviceName, "base/config")
 	validPath := strings.HasPrefix(filePath, filterPath)
 	return validPath
+}
+
+func pathForServiceConfig(serviceName string) string {
+	return path.Join("services", serviceName)
 }

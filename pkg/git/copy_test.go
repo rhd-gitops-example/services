@@ -67,6 +67,15 @@ func TestPathValidForPromotion(t *testing.T) {
 	}
 }
 
+func TestPathForServiceConfig(t *testing.T) {
+	serviceName := "usefulService"
+	correctPath := "services/usefulService"
+	serviceConfigPath := pathForServiceConfig(serviceName)
+	if serviceConfigPath != correctPath {
+		t.Fatalf("Invalid result for pathForServiceConfig(%s): wanted %s got %s", serviceName, correctPath, serviceConfigPath)
+	}
+}
+
 type mockSource struct {
 	files     []string
 	localPath string
