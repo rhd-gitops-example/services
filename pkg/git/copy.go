@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -23,7 +24,9 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 		destPath := pathForServiceConfig(name)
 		if pathValidForPromotion(serviceName, destPath) {
 			err := dest.CopyFile(sourcePath, destPath)
-			copied = append(copied, destPath)
+			if err == nil {
+				copied = append(copied, destPath)
+			}
 			return err
 		}
 		return nil
@@ -37,6 +40,8 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 func pathValidForPromotion(serviceName, filePath string) bool {
 	filterPath := filepath.Join(pathForServiceConfig(serviceName), "base", "config")
 	validPath := strings.HasPrefix(filePath, filterPath)
+
+	fmt.Printf("@@@ pathValidForPromotion(%s, %s) returning %v\n", serviceName, filePath, validPath)
 	return validPath
 }
 

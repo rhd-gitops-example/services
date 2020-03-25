@@ -76,6 +76,26 @@ func TestPathForServiceConfig(t *testing.T) {
 	}
 }
 
+func TestCopyServiceWithFailureCopying(t *testing.T) {
+	testError := errors.New("this is a test error")
+	s := &mockSource{localPath: "/tmp/testing"}
+	files := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
+	for _, f := range files {
+		s.addFile(f)
+	}
+	d := &mockDestination{}
+	d.copyError = testError
+
+	copied, err := CopyService("service-a", s, d)
+	if err != testError {
+		t.Fatalf("unexpected error: got %v, wanted %v", err, testError)
+	}
+	d.assertFilesWritten(t, []string{})
+	if !reflect.DeepEqual(copied, []string{}) {
+		t.Fatalf("failed to copy the files, got %#v, want %#v", copied, []string{})
+	}
+}
+
 type mockSource struct {
 	files     []string
 	localPath string
@@ -117,12 +137,16 @@ func (s *mockSource) addFile(name string) {
 }
 
 type mockDestination struct {
-	written []string
+	written   []string
+	copyError error
 }
 
 func (d *mockDestination) CopyFile(src, dst string) error {
 	if d.written == nil {
 		d.written = []string{}
+	}
+	if d.copyError != nil {
+		return d.copyError
 	}
 	d.written = append(d.written, dst)
 	return nil
