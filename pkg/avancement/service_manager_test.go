@@ -54,6 +54,7 @@ func TestAddCredentials(t *testing.T) {
 		{"https://testing.example.com/test", testUser, "https://promotion:test-token@testing.example.com/test"},
 		{"https://promotion:my-token@testing.example.com/test", testUser, "https://promotion:my-token@testing.example.com/test"},
 		{"https://testing:atoken@testing.example.com/test", testUser, "https://testing:atoken@testing.example.com/test"},
+		{"/mydir/test", testUser, "/mydir/test"},
 	}
 
 	for i, tt := range tests {

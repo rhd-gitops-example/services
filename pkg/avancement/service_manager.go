@@ -153,7 +153,7 @@ func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse git repo url %v: %w", s, err)
 	}
-	if parsed.User != nil {
+	if parsed.Scheme != "https" || parsed.User != nil {
 		return s, nil
 	}
 	parsed.User = url.UserPassword("promotion", a.Token)
