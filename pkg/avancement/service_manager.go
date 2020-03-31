@@ -88,7 +88,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, error) {
 	repo, err := s.cloneRepo(repoURL, branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone destination repo %s: %w", repoURL, err)
+		return nil, fmt.Errorf("failed to clone source repo %s: %w", repoURL, err)
 	}
 	err = repo.Checkout(branch)
 	if err != nil {
