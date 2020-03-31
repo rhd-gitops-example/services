@@ -7,10 +7,11 @@ import (
 	"os"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/rhd-gitops-example/services/pkg/avancement"
-	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/tcnksm/go-gitconfig"
 	"github.com/urfave/cli/v2"
+
+	"github.com/rhd-gitops-example/services/pkg/avancement"
+	"github.com/rhd-gitops-example/services/pkg/git"
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	cacheDirFlag    = "cache-dir"
 	nameFlag        = "commit-name"
 	emailFlag       = "commit-email"
+	debugFlag       = "debug"
 )
 
 var (
@@ -31,6 +33,13 @@ var (
 			Usage:    "oauth access token to authenticate the request",
 			EnvVars:  []string{"GITHUB_TOKEN"},
 			Required: true,
+		},
+		&cli.BoolFlag{
+			Name:     debugFlag,
+			Usage:    "additional debug logging output",
+			EnvVars:  []string{"DEBUG_SERVICES"},
+			Value:    false,
+			Required: false,
 		},
 	}
 
@@ -103,6 +112,7 @@ func promoteAction(c *cli.Context) error {
 	toRepo := c.String(toFlag)
 	service := c.String(serviceFlag)
 	newBranchName := c.String(branchNameFlag)
+	debug := c.Bool(debugFlag)
 
 	cacheDir, err := homedir.Expand(c.String(cacheDirFlag))
 	if err != nil {
@@ -113,7 +123,7 @@ func promoteAction(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author).Promote(service, fromRepo, toRepo, newBranchName)
+	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName)
 }
 
 func newAuthor(c *cli.Context) (*git.Author, error) {

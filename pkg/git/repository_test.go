@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -43,7 +44,7 @@ func TestRepoName(t *testing.T) {
 func TestCloneCreatesDirectory(t *testing.T) {
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
-	r, err := NewRepository(testRepository, path.Join(tempDir, "path"))
+	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), false)
 	assertNoError(t, err)
 	err = r.Clone()
 	assertNoError(t, err)
@@ -68,24 +69,6 @@ func TestClone(t *testing.T) {
 		t.Fatalf("failed to read file: %s", diff)
 	}
 }
-
-/* TestCheckout relates to earlier behaviour that dealt with branches within repos. We can revisit this.
-func TestCheckout(t *testing.T) {
-	r, cleanup := cloneTestRepository(t)
-	defer cleanup()
-
-	err := r.Checkout("updated-version")
-	assertNoError(t, err)
-
-	contents, err := ioutil.ReadFile(path.Join(r.LocalPath, "env-staging/service-a/deployment.txt"))
-	assertNoError(t, err)
-
-	want := "This is an updated version of this file.\n"
-	if diff := cmp.Diff(want, string(contents)); diff != "" {
-		t.Fatalf("failed to read file: %s", diff)
-	}
-}
-*/
 
 func TestWalk(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
@@ -201,7 +184,7 @@ func TestStageFiles(t *testing.T) {
 	err = r.StageFiles("services/service-a/new-file.txt")
 	assertNoError(t, err)
 
-	out := assertExecGit(t, r.repoPath("services/service-a"), "status", "--porcelain")
+	out := assertExecGit(t, r, r.repoPath("services/service-a"), "status", "--porcelain")
 	want := "A  services/service-a/new-file.txt\n"
 	if diff := cmp.Diff(want, string(out)); diff != "" {
 		t.Fatalf("file status not modified: %s", diff)
@@ -225,12 +208,29 @@ func TestCommit(t *testing.T) {
 	err = r.Commit("this is a test commit", &Author{Name: "Test User", Email: "testing@example.com"})
 	assertNoError(t, err)
 
-	out := strings.Split(string(assertExecGit(t, r.repoPath("services/service-a"), "log", "-n", "1")), "\n")
+	out := strings.Split(string(assertExecGit(t, r, r.repoPath("services/service-a"), "log", "-n", "1")), "\n")
 	want := []string{"Author: Test User <testing@example.com>", "    this is a test commit"}
 	if diff := cmp.Diff(want, out, cmpopts.IgnoreSliceElements(func(s string) bool {
 		return strings.HasPrefix(s, "commit") || strings.HasPrefix(s, "Date:") || s == ""
 	})); diff != "" {
 		t.Fatalf("file commit match failed: %s", diff)
+	}
+}
+
+func TestExecGit(t *testing.T) {
+	r, cleanup := cloneTestRepository(t)
+	r.debug = true
+	captured := ""
+	r.logger = func(f string, v ...interface{}) {
+		captured = fmt.Sprintf(f, v...)
+	}
+	defer cleanup()
+	_, err := r.execGit(r.repoPath(), nil, "unknown")
+	test.AssertErrorMatch(t, "exit status 1", err)
+
+	want := "DEBUG: git: 'unknown' is not a git command. See 'git --help'."
+	if strings.TrimSpace(captured) != want {
+		t.Fatalf("execGit debug log failed: got %s, want %s", captured, want)
 	}
 }
 
@@ -255,7 +255,7 @@ func TestPush(t *testing.T) {
 
 func cloneTestRepository(t *testing.T) (*Repository, func()) {
 	tempDir, cleanup := makeTempDir(t)
-	r, err := NewRepository(authenticatedURL(t), tempDir)
+	r, err := NewRepository(authenticatedURL(t), tempDir, false)
 	assertNoError(t, err)
 	err = r.Clone()
 	assertNoError(t, err)
@@ -282,9 +282,9 @@ func makeTempDir(t *testing.T) (string, func()) {
 	}
 }
 
-func assertExecGit(t *testing.T, gitPath string, args ...string) []byte {
+func assertExecGit(t *testing.T, r *Repository, gitPath string, args ...string) []byte {
 	t.Helper()
-	out, err := execGit(gitPath, nil, args...)
+	out, err := r.execGit(gitPath, nil, args...)
 	if err != nil {
 		t.Fatalf("assertExecGit failed: %s (%s)", err, out)
 	}
