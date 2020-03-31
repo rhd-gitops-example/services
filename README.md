@@ -60,8 +60,17 @@ This section is temporary. To create a sample promotion Pull Request, until http
 ./services promote --from [https://github.com/mnuttall/gitops-repo-testing] --to [https://github.com/mnuttall/staging] --service service-a`
 ```
 
-We need to remove the local cache between requests. See https://github.com/rhd-gitops-example/services/issues/20. Until then, add `rm -rf ~/.promotion/cache; ` before subsequent requests.
+At a high level the services command currently:
 
-New pull requests need new branches. Add `--branch [unique branch name]` before submitting further promotion PRs. See https://github.com/rhd-gitops-example/services/issues/21.
+- git clones the source and target repositories into ~/.promotion/cache
+- creates a branch (as per the given --branch-name)
+- checks out the branch
+- copies the relevant files from the cloned source into the cloned target
+- pushes the cloned target
+- creates a PR from the new branch in the target to master in the target
 
-See https://github.com/rhd-gitops-example/services/issues/19 for an issue related to problems 'promoting' config from a source repo into a gitops repo. 
+Important Notes:
+
+- We need to remove the local cache between requests. See https://github.com/rhd-gitops-example/services/issues/20. Until then, add `rm -rf ~/.promotion/cache; ` before subsequent requests.
+- New pull requests need new branches (i.e you cannot run the same command twice). Add `--branch [unique branch name]` before submitting further promotion PRs. See https://github.com/rhd-gitops-example/services/issues/21.
+- See https://github.com/rhd-gitops-example/services/issues/19 for an issue related to problems 'promoting' config from a source repo into a gitops repo. 
