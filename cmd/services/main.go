@@ -24,6 +24,7 @@ const (
 	nameFlag        = "commit-name"
 	emailFlag       = "commit-email"
 	debugFlag       = "debug"
+	keepCacheFlag   = "keep-cache"
 )
 
 var (
@@ -83,6 +84,12 @@ var (
 			Value:    false,
 			Required: false,
 		},
+		&cli.BoolFlag{
+			Name:     keepCacheFlag,
+			Usage:    "whether to retain the locally cloned repositories in the cache directory",
+			Value:    false,
+			Required: false,
+		},
 	}
 )
 
@@ -113,6 +120,7 @@ func promoteAction(c *cli.Context) error {
 	service := c.String(serviceFlag)
 	newBranchName := c.String(branchNameFlag)
 	debug := c.Bool(debugFlag)
+	keepCache := c.Bool(keepCacheFlag)
 
 	cacheDir, err := homedir.Expand(c.String(cacheDirFlag))
 	if err != nil {
@@ -123,7 +131,7 @@ func promoteAction(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName)
+	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName, keepCache)
 }
 
 func newAuthor(c *cli.Context) (*git.Author, error) {

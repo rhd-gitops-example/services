@@ -14,7 +14,15 @@ const (
 	staging = "https://example.com/testing/staging-env"
 )
 
-func TestPromoteWithSuccess(t *testing.T) {
+func TestPromoteWithSuccessKeepCacheTrue(t *testing.T) {
+	promoteWithSuccess(t, true)
+}
+
+func TestPromoteWithSuccessKeepCacheFalse(t *testing.T) {
+	promoteWithSuccess(t, false)
+}
+
+func promoteWithSuccess(t *testing.T, keepCache bool) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	client, _ := fakescm.NewDefault()
@@ -33,7 +41,7 @@ func TestPromoteWithSuccess(t *testing.T) {
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch)
+	err := sm.Promote("my-service", dev, staging, dstBranch, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,6 +50,14 @@ func TestPromoteWithSuccess(t *testing.T) {
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
+
+	if keepCache {
+		stagingRepo.AssertNotDeletedFromCache(t)
+		devRepo.AssertNotDeletedFromCache(t)
+	} else {
+		stagingRepo.AssertDeletedFromCache(t)
+		devRepo.AssertDeletedFromCache(t)
+	}
 }
 
 func TestAddCredentials(t *testing.T) {
@@ -74,4 +90,37 @@ func mustAddCredentials(t *testing.T, repoURL string, a *git.Author) string {
 		t.Fatalf("failed to add credentials to %s: %e", repoURL, err)
 	}
 	return u
+}
+
+func TestPromoteWithCacheDeletionFailure(t *testing.T) {
+	dstBranch := mock.FAIL_DELETING_REPO_BRANCH
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	client, _ := fakescm.NewDefault()
+	fakeClientFactory := func(s string) *scm.Client {
+		return client
+	}
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = fakeClientFactory
+	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+
+	err := sm.Promote("my-service", dev, staging, dstBranch, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
+
+	stagingRepo.AssertNotDeletedFromCache(t)
+	devRepo.AssertDeletedFromCache(t)
 }

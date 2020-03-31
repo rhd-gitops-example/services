@@ -65,15 +65,32 @@ const fromBranch = "master"
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName string) error {
+func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName string, keepCache bool) error {
+	var source, destination git.Repo
+	var reposToDelete []git.Repo
+
+	defer func(keepRepos bool, repos *[]git.Repo) {
+		if !keepRepos {
+			for _, repo := range *repos {
+				err := repo.DeleteCachedRepo()
+				if err != nil {
+					fmt.Errorf("failed deleting files from cache: %w", err)
+				}
+			}
+		}
+	}(keepCache, &reposToDelete)
+
 	source, err := s.checkoutSourceRepo(fromURL, fromBranch)
 	if err != nil {
 		return err
 	}
-	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
+	reposToDelete = append(reposToDelete, source)
+
+	destination, err = s.checkoutDestinationRepo(toURL, newBranchName)
 	if err != nil {
 		return fmt.Errorf("failed to checkout repo: %w", err)
 	}
+	reposToDelete = append(reposToDelete, destination)
 
 	copied, err := git.CopyService(serviceName, source, destination)
 
