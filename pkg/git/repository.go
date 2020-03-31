@@ -1,8 +1,10 @@
 package git
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -17,18 +19,20 @@ type Repository struct {
 	LocalPath string
 	RepoURL   string
 	repoName  string
+	debug     bool
+	logger    func(fmt string, v ...interface{})
 }
 
 // NewRepository creates and returns a local cache of an upstream repository.
 //
 // The repoURL should be of the form https://github.com/myorg/myrepo.
 // The path should be a local directory where the contents are cloned to.
-func NewRepository(repoURL, localPath string) (*Repository, error) {
+func NewRepository(repoURL, localPath string, debug bool) (*Repository, error) {
 	name, err := repoName(repoURL)
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name}, nil
+	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, logger: log.Printf}, nil
 }
 
 func (g *Repository) repoPath(extras ...string) string {
@@ -41,17 +45,18 @@ func (r *Repository) Clone() error {
 	if err != nil {
 		return fmt.Errorf("error creating the cache dir %s: %w", r.LocalPath, err)
 	}
-	_, err = execGit(r.LocalPath, nil, "clone", r.RepoURL)
+	out, err := r.execGit(r.LocalPath, nil, "clone", r.RepoURL)
+	log.Printf("%s\n", out)
 	return err
 }
 
 func (r *Repository) Checkout(branch string) error {
-	_, err := execGit(r.repoPath(), nil, "checkout", branch)
+	_, err := r.execGit(r.repoPath(), nil, "checkout", branch)
 	return err
 }
 
 func (r *Repository) CheckoutAndCreate(branch string) error {
-	_, err := execGit(r.repoPath(), nil, "checkout", "-b", branch)
+	_, err := r.execGit(r.repoPath(), nil, "checkout", "-b", branch)
 	return err
 }
 
@@ -91,29 +96,38 @@ func (r *Repository) CopyFile(src, dst string) error {
 }
 
 func (r *Repository) StageFiles(filenames ...string) error {
-	_, err := execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
+	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
 	return err
 }
 
 func (r *Repository) Commit(msg string, author *Author) error {
 	args := []string{"commit", "-m", msg}
-	_, err := execGit(r.repoPath(), envFromAuthor(author), args...)
+	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)
 	return err
 }
 
 func (r *Repository) Push(branchName string) error {
 	args := []string{"push", "origin", branchName}
-	_, err := execGit(r.repoPath(), nil, args...)
+	_, err := r.execGit(r.repoPath(), nil, args...)
 	return err
 }
 
-func execGit(workingDir string, env []string, args ...string) ([]byte, error) {
+func (r *Repository) execGit(workingDir string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.Command("git", args...)
 	if env != nil {
 		cmd.Env = append(os.Environ(), env...)
 	}
 	cmd.Dir = workingDir
-	return cmd.Output()
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+	err := cmd.Run()
+	out := b.Bytes()
+	// TODO: more sophisticated logging.
+	if err != nil && r.debug {
+		r.logger("DEBUG: %s\n", out)
+	}
+	return out, err
 }
 
 // TODO: this probably needs specialisation for GitLab URLs.

@@ -18,6 +18,7 @@ type ServiceManager struct {
 	author        *git.Author
 	clientFactory scmClientFactory
 	repoFactory   repoFactory
+	debug         bool
 }
 
 const (
@@ -25,21 +26,34 @@ const (
 )
 
 type scmClientFactory func(token string) *scm.Client
-type repoFactory func(url, localPath string) (git.Repo, error)
+type repoFactory func(url, localPath string, debug bool) (git.Repo, error)
+type serviceOpt func(*ServiceManager)
 
 // New creates and returns a new ServiceManager.
 //
 // The cacheDir used to checkout the source and destination repos.
 // The token is used to create a Git token
-func New(cacheDir string, author *git.Author) *ServiceManager {
-	return &ServiceManager{
+func New(cacheDir string, author *git.Author, opts ...serviceOpt) *ServiceManager {
+	sm := &ServiceManager{
 		cacheDir:      cacheDir,
 		author:        author,
 		clientFactory: git.CreateGitHubClient,
-		repoFactory: func(url, localPath string) (git.Repo, error) {
-			r, err := git.NewRepository(url, localPath)
+		repoFactory: func(url, localPath string, debug bool) (git.Repo, error) {
+			r, err := git.NewRepository(url, localPath, debug)
 			return git.Repo(r), err
 		},
+	}
+	for _, o := range opts {
+		o(sm)
+	}
+	return sm
+}
+
+// WithDebug is a service option that configures the ServiceManager for
+// additional debugging.
+func WithDebug(f bool) serviceOpt {
+	return func(sm *ServiceManager) {
+		sm.debug = f
 	}
 }
 
@@ -115,13 +129,13 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo, err := s.repoFactory(repoURL, path.Join(s.cacheDir, encode(repoURL, branch)))
+	repo, err := s.repoFactory(repoURL, path.Join(s.cacheDir, encode(repoURL, branch)), s.debug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repo for URL %s: %w", repoURL, err)
 	}
 	err = repo.Clone()
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone repo %s: %w", repoURL, err)
+		return nil, err
 	}
 	return repo, nil
 }

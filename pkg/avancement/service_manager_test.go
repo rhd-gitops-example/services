@@ -28,7 +28,7 @@ func TestPromoteWithSuccess(t *testing.T) {
 	}
 	sm := New("tmp", author)
 	sm.clientFactory = fakeClientFactory
-	sm.repoFactory = func(url, _ string) (git.Repo, error) {
+	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
