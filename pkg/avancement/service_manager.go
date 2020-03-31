@@ -10,6 +10,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 
 	"github.com/rhd-gitops-example/services/pkg/git"
+	"github.com/rhd-gitops-example/services/pkg/local"
 	"github.com/rhd-gitops-example/services/pkg/util"
 )
 
@@ -18,6 +19,7 @@ type ServiceManager struct {
 	author        *git.Author
 	clientFactory scmClientFactory
 	repoFactory   repoFactory
+	localFactory  localFactory
 	debug         bool
 }
 
@@ -27,6 +29,7 @@ const (
 
 type scmClientFactory func(token string) *scm.Client
 type repoFactory func(url, localPath string, debug bool) (git.Repo, error)
+type localFactory func(localPath string, debug bool) (git.Source, error)
 type serviceOpt func(*ServiceManager)
 
 // New creates and returns a new ServiceManager.
@@ -41,6 +44,10 @@ func New(cacheDir string, author *git.Author, opts ...serviceOpt) *ServiceManage
 		repoFactory: func(url, localPath string, debug bool) (git.Repo, error) {
 			r, err := git.NewRepository(url, localPath, debug)
 			return git.Repo(r), err
+		},
+		localFactory: func(localPath string, debug bool)(git.Source, error){
+			l := &local.Local{LocalPath: localPath, Debug: debug, Logger: log.Printf}
+			return git.Source(l), nil
 		},
 	}
 	for _, o := range opts {
@@ -80,22 +87,30 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 		}
 	}(keepCache, &reposToDelete)
 
-	source, err := s.checkoutSourceRepo(fromURL, fromBranch)
-	if err != nil {
-		return err
-	}
-	reposToDelete = append(reposToDelete, source)
-
-	destination, err = s.checkoutDestinationRepo(toURL, newBranchName)
+	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
 	if err != nil {
 		return fmt.Errorf("failed to checkout repo: %w", err)
 	}
 	reposToDelete = append(reposToDelete, destination)
 
-	copied, err := git.CopyService(serviceName, source, destination)
+	copied := []string{}
+	if fromSourceRepo(fromURL) {
+		localSource, err := s.localFactory(fromURL, s.debug) 
+		copied, err = local.CopyConfig(serviceName, localSource, destination)
+		if err != nil {
+			return fmt.Errorf("failed to setup local repo: %w", err)
+		}
+	} else {
+		source, err = s.checkoutSourceRepo(fromURL, fromBranch)
+		if err != nil {
+			return fmt.Errorf("failed to checkout repo: %w", err)
+		}
+		reposToDelete = append(reposToDelete, source)
 
-	if err != nil {
-		return fmt.Errorf("failed to copy service: %w", err)
+		copied, err = git.CopyService(serviceName, source, destination)
+		if err != nil {
+			return fmt.Errorf("failed to copy service: %w", err)
+		}
 	}
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
@@ -189,4 +204,11 @@ func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	}
 	parsed.User = url.UserPassword("promotion", a.Token)
 	return parsed.String(), nil
+}
+func fromSourceRepo(s string) bool {
+	parsed, err := url.Parse(s)
+	if err != nil || parsed.Scheme == "" {
+		return true
+	}
+	return false
 }

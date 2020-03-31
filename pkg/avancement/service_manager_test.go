@@ -2,6 +2,9 @@ package avancement
 
 import (
 	"testing"
+	"path/filepath"
+	"strings"
+	"path"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -11,6 +14,7 @@ import (
 
 const (
 	dev     = "https://example.com/testing/dev-env"
+	ldev    = "/root/repo"
 	staging = "https://example.com/testing/staging-env"
 )
 
@@ -57,6 +61,52 @@ func promoteWithSuccess(t *testing.T, keepCache bool) {
 	} else {
 		stagingRepo.AssertDeletedFromCache(t)
 		devRepo.AssertDeletedFromCache(t)
+	}
+}
+
+func TestPromoteLocalWithSuccessKeepCacheFalse(t *testing.T) {
+	promoteLocalWithSuccess(t, false)
+}
+
+func TestPromoteLocalWithSuccessKeepCacheTrue(t *testing.T) {
+	promoteLocalWithSuccess(t, true)
+}
+
+func promoteLocalWithSuccess(t *testing.T, keepCache bool) {
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	client, _ := fakescm.NewDefault()
+	fakeClientFactory := func(s string) *scm.Client {
+		return client
+	}
+	stagingRepo := mock.New("/staging", "master")
+	devRepo := NewLocal("/dev")
+
+	sm := New("tmp", author)
+	sm.clientFactory = fakeClientFactory
+	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+		return git.Repo(stagingRepo), nil
+	}
+	sm.localFactory = func(path string, _ bool) (git.Source, error) {
+		return git.Source(devRepo), nil
+	}
+	sm.debug = true
+	devRepo.AddFiles("/config/myfile.yaml")
+
+	err := sm.Promote("my-service", ldev, staging, dstBranch, keepCache)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
+
+	if keepCache {
+		stagingRepo.AssertNotDeletedFromCache(t)
+	} else {
+		stagingRepo.AssertDeletedFromCache(t)
 	}
 }
 
@@ -123,4 +173,48 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 
 	stagingRepo.AssertNotDeletedFromCache(t)
 	devRepo.AssertDeletedFromCache(t)
+}
+
+
+type mockSource struct {
+	files     []string
+	localPath string
+}
+
+func NewLocal(localPath string) *mockSource {
+	return &mockSource{localPath: localPath}
+}
+
+// Walk: a mock function to emulate what happens in Repository.Walk()
+// The Mock version is different: it iterates over mockSource.files[] and then drives
+// the visitor callback in CopyService() as usual.
+//
+// To preserve the same behaviour, we see that Repository Walk receives /full/path/to/repo/services/service-name
+// and then calls filePath.Walk() on /full/path/to/repo/services/ .
+// When CopyService() drives Walk(), 'base' is typically services/service-name
+// Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
+func (s *mockSource) Walk(base string, cb func(string, string) error) error {
+	if s.files == nil {
+		return nil
+	}
+	base = filepath.Join(s.localPath, "config")
+
+	for _, f := range s.files {
+		splitString := filepath.Dir(base) + "/"
+		splitPoint := strings.Index(f, splitString) + len(splitString)
+		prefix := f[:splitPoint]
+		name := f[splitPoint:]
+		err := cb(prefix, name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *mockSource) AddFiles(name string) {
+	if s.files == nil {
+		s.files = []string{}
+	}
+	s.files = append(s.files, path.Join(s.localPath, name))
 }
