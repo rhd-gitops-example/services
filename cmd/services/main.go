@@ -34,13 +34,6 @@ var (
 			EnvVars:  []string{"GITHUB_TOKEN"},
 			Required: true,
 		},
-		&cli.BoolFlag{
-			Name:     debugFlag,
-			Usage:    "additional debug logging output",
-			EnvVars:  []string{"DEBUG_SERVICES"},
-			Value:    false,
-			Required: false,
-		},
 	}
 
 	promoteFlags = []cli.Flag{
@@ -82,6 +75,13 @@ var (
 			Usage:    "the email to use for commits when creating branches",
 			Required: false,
 			EnvVars:  []string{"COMMIT_EMAIL"},
+		},
+		&cli.BoolFlag{
+			Name:     debugFlag,
+			Usage:    "additional debug logging output",
+			EnvVars:  []string{"DEBUG_SERVICES"},
+			Value:    false,
+			Required: false,
 		},
 	}
 )
