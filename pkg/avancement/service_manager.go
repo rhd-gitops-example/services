@@ -6,12 +6,15 @@ import (
 	"log"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 
 	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/rhd-gitops-example/services/pkg/local"
 	"github.com/rhd-gitops-example/services/pkg/util"
+
+	"github.com/google/uuid"
 )
 
 type ServiceManager struct {
@@ -87,6 +90,22 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 		}
 	}(keepCache, &reposToDelete)
 
+	var localSource git.Source
+	var errorSource error
+	if fromLocalRepo(fromURL) {
+		localSource = s.localFactory(fromURL, s.debug)
+	} else {
+		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
+		if errorSource != nil {
+			return fmt.Errorf("failed to checkout repo: %w", errorSource)
+		}
+		reposToDelete = append(reposToDelete, source)
+	}
+
+	if newBranchName == "" {
+		newBranchName = generateBranch(source)
+	}
+
 	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
 	if err != nil {
 		return fmt.Errorf("failed to checkout repo: %w", err)
@@ -95,23 +114,17 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 
 	var copied []string
 	if fromLocalRepo(fromURL) {
-		localSource := s.localFactory(fromURL, s.debug)
 		copied, err = local.CopyConfig(serviceName, localSource, destination)
 		if err != nil {
 			return fmt.Errorf("failed to setup local repo: %w", err)
 		}
 	} else {
-		source, err = s.checkoutSourceRepo(fromURL, fromBranch)
-		if err != nil {
-			return fmt.Errorf("failed to checkout repo: %w", err)
-		}
-		reposToDelete = append(reposToDelete, source)
-
 		copied, err = git.CopyService(serviceName, source, destination)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}
 	}
+
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
@@ -211,4 +224,12 @@ func fromLocalRepo(s string) bool {
 		return true
 	}
 	return false
+}
+
+func generateBranch(repo git.Repo) string {
+	uniqueString := uuid.New()
+	runes := []rune(uniqueString.String())
+	branchName := repo.GetName() + "-" + repo.GetCommitID() + "-" + string(runes[0:5])
+	branchName = strings.Replace(branchName, "\n","",-1)
+	return branchName
 }

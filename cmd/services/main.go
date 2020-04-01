@@ -56,7 +56,7 @@ var (
 		&cli.StringFlag{
 			Name:  branchNameFlag,
 			Usage: "the name to use for the newly created branch",
-			Value: "test-branch",
+			Value: "",
 		},
 		&cli.StringFlag{
 			Name:     cacheDirFlag,
