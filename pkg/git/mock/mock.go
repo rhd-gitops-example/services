@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"errors"
 	"io"
 	"path"
 	"path/filepath"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/rhd-gitops-example/services/pkg/git"
 )
+
+/* FAIL_DELETING_REPO_BRANCH is a branch name that when used as a target branch will
+   cause the the deletion from the cache to fail (in tests only) */
+const FAIL_DELETING_REPO_BRANCH = "fail_to_delete_repo"
 
 type Repository struct {
 	currentBranch string
@@ -31,6 +36,9 @@ type Repository struct {
 
 	pushedBranches []string
 	pushErr        error
+
+	deleted    bool
+	deletedErr error
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
@@ -140,6 +148,17 @@ func (m *Repository) AddFiles(names ...string) {
 	}
 }
 
+// DeleteCachedRepo deletes the repo from the local cache directory
+func (m *Repository) DeleteCachedRepo() error {
+	if m.currentBranch == FAIL_DELETING_REPO_BRANCH {
+		m.deleted = false
+		m.deletedErr = errors.New("MOCK FAILURE DELETING REPO MESSAGE")
+	} else {
+		m.deleted = true
+	}
+	return m.deletedErr
+}
+
 // AssertBranchCreated asserts that the named branch was created from the from
 // branch, using the `CheckoutAndCreate` implementation.
 func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
@@ -168,6 +187,20 @@ func (m *Repository) AssertCommit(t *testing.T, branch, msg string, a *git.Autho
 func (m *Repository) AssertPush(t *testing.T, branch string) {
 	if !hasString(branch, m.pushedBranches) {
 		t.Fatalf("branch %s was not pushed", branch)
+	}
+}
+
+// AssertDeletedFromCache asserts that delete was called to remove the local repo
+func (m *Repository) AssertDeletedFromCache(t *testing.T) {
+	if !m.deleted {
+		t.Fatalf("repo was not deleted from the promotion cache directory")
+	}
+}
+
+// AssertNotDeletedFromCache asserts that delete was called to remove the local repo
+func (m *Repository) AssertNotDeletedFromCache(t *testing.T) {
+	if m.deleted {
+		t.Fatalf("repo was unexpectedly deleted from the promotion cache directory : %w", m.deletedErr)
 	}
 }
 
