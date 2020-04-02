@@ -11,11 +11,11 @@ import (
 // TODO: For the Head, should this try and determine whether or not this is a
 // fork ("user" of both repoURLs) and if so, simplify the Head?
 func makePullRequestInput(fromURL, toURL, branchName string) (*scm.PullRequestInput, error) {
-	fromUser, fromRepo, err := util.ExtractUserAndRepo(fromURL)
+	_, fromRepo, err := util.ExtractUserAndRepo(fromURL)
 	if err != nil {
 		return nil, err
 	}
-	_, toRepo, err := util.ExtractUserAndRepo(toURL)
+	fromUser, toRepo, err := util.ExtractUserAndRepo(toURL)
 	if err != nil {
 		return nil, err
 	}
