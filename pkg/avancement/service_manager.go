@@ -94,7 +94,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 	reposToDelete = append(reposToDelete, destination)
 
 	copied := []string{}
-	if fromSourceRepo(fromURL) {
+	if fromLocalRepo(fromURL) {
 		localSource, err := s.localFactory(fromURL, s.debug) 
 		copied, err = local.CopyConfig(serviceName, localSource, destination)
 		if err != nil {
@@ -205,7 +205,7 @@ func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	parsed.User = url.UserPassword("promotion", a.Token)
 	return parsed.String(), nil
 }
-func fromSourceRepo(s string) bool {
+func fromLocalRepo(s string) bool {
 	parsed, err := url.Parse(s)
 	if err != nil || parsed.Scheme == "" {
 		return true
