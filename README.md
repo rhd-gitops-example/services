@@ -50,14 +50,14 @@ go test ./pkg/git -run TestCopyServiceWithFailureCopying
 
 This section is temporary. To create a sample promotion Pull Request, until https://github.com/rhd-gitops-example/services/issues/8 is done:
 
-- Copy https://github.com/mnuttall/gitops-repo-testing 
-- Copy https://github.com/mnuttall/staging
+- Copy https://github.com/rhd-gitops-example/gitops-example-dev
+- Copy https://github.com/rhd-gitops-example/gitops-example-staging
 - Build the code: `go build ./cmd/services`
 - export GITHUB_TOKEN=[your token]
 - Substitute your repository URLs for those in square brackets:
 
 ```shell
-./services promote --from [https://github.com/mnuttall/gitops-repo-testing] --to [https://github.com/mnuttall/staging] --service service-a`
+./services promote --from [url.to.dev] --to [url.to.staging] --service service-a`
 ```
 
 At a high level the services command currently:
