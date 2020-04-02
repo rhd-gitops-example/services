@@ -36,7 +36,7 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination) ([]
 	return copied, err
 }
 
-// pathForDestServiceConfig defines where in a 'gitops' repository the local config file
+// pathForDestServiceConfig defines where in a 'gitops' repository the config
 // for a given service should live.
 func pathForDestServiceConfig(serviceName, name string) string {
 	return filepath.Join("services/", serviceName, "base", name)
