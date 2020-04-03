@@ -1,10 +1,11 @@
 package avancement
 
 import (
-	"testing"
+	"errors"
+	"path"
 	"path/filepath"
 	"strings"
-	"path"
+	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -29,17 +30,16 @@ func TestPromoteWithSuccessKeepCacheFalse(t *testing.T) {
 func promoteWithSuccess(t *testing.T, keepCache bool) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	client, _ := fakescm.NewDefault()
-	fakeClientFactory := func(s string) *scm.Client {
-		return client
-	}
 	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
 	}
 	sm := New("tmp", author)
-	sm.clientFactory = fakeClientFactory
+	sm.clientFactory = func(s string) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
 	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
@@ -75,20 +75,19 @@ func TestPromoteLocalWithSuccessKeepCacheTrue(t *testing.T) {
 func promoteLocalWithSuccess(t *testing.T, keepCache bool) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	client, _ := fakescm.NewDefault()
-	fakeClientFactory := func(s string) *scm.Client {
-		return client
-	}
 	stagingRepo := mock.New("/staging", "master")
 	devRepo := NewLocal("/dev")
 
 	sm := New("tmp", author)
-	sm.clientFactory = fakeClientFactory
+	sm.clientFactory = func(s string) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
 	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
 		return git.Repo(stagingRepo), nil
 	}
-	sm.localFactory = func(path string, _ bool) (git.Source, error) {
-		return git.Source(devRepo), nil
+	sm.localFactory = func(path string, _ bool) git.Source {
+		return git.Source(devRepo)
 	}
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
@@ -143,19 +142,19 @@ func mustAddCredentials(t *testing.T, repoURL string, a *git.Author) string {
 }
 
 func TestPromoteWithCacheDeletionFailure(t *testing.T) {
-	dstBranch := mock.FAIL_DELETING_REPO_BRANCH
+	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	client, _ := fakescm.NewDefault()
-	fakeClientFactory := func(s string) *scm.Client {
-		return client
-	}
 	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	stagingRepo.DeleteErr = errors.New("failed test delete")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
 	}
 	sm := New("tmp", author)
-	sm.clientFactory = fakeClientFactory
+	sm.clientFactory = func(s string) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
 	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
@@ -175,7 +174,6 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 	devRepo.AssertDeletedFromCache(t)
 }
 
-
 type mockSource struct {
 	files     []string
 	localPath string
@@ -193,11 +191,11 @@ func NewLocal(localPath string) *mockSource {
 // and then calls filePath.Walk() on /full/path/to/repo/services/ .
 // When CopyService() drives Walk(), 'base' is typically services/service-name
 // Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
-func (s *mockSource) Walk(base string, cb func(string, string) error) error {
+func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 	if s.files == nil {
 		return nil
 	}
-	base = filepath.Join(s.localPath, "config")
+	base := filepath.Join(s.localPath, "config")
 
 	for _, f := range s.files {
 		splitString := filepath.Dir(base) + "/"

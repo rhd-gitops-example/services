@@ -26,5 +26,5 @@ type Repo interface {
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error
 	Push(branch string) error
-	DeleteCachedRepo() error
+	DeleteCache() error
 }

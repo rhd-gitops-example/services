@@ -29,7 +29,7 @@ const (
 
 type scmClientFactory func(token string) *scm.Client
 type repoFactory func(url, localPath string, debug bool) (git.Repo, error)
-type localFactory func(localPath string, debug bool) (git.Source, error)
+type localFactory func(localPath string, debug bool) git.Source
 type serviceOpt func(*ServiceManager)
 
 // New creates and returns a new ServiceManager.
@@ -45,9 +45,9 @@ func New(cacheDir string, author *git.Author, opts ...serviceOpt) *ServiceManage
 			r, err := git.NewRepository(url, localPath, debug)
 			return git.Repo(r), err
 		},
-		localFactory: func(localPath string, debug bool)(git.Source, error){
+		localFactory: func(localPath string, debug bool) git.Source {
 			l := &local.Local{LocalPath: localPath, Debug: debug, Logger: log.Printf}
-			return git.Source(l), nil
+			return git.Source(l)
 		},
 	}
 	for _, o := range opts {
@@ -79,9 +79,9 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 	defer func(keepRepos bool, repos *[]git.Repo) {
 		if !keepRepos {
 			for _, repo := range *repos {
-				err := repo.DeleteCachedRepo()
+				err := repo.DeleteCache()
 				if err != nil {
-					fmt.Errorf("failed deleting files from cache: %w", err)
+					log.Printf("failed deleting files from cache: %s", err)
 				}
 			}
 		}
@@ -93,9 +93,9 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 	}
 	reposToDelete = append(reposToDelete, destination)
 
-	copied := []string{}
+	var copied []string
 	if fromLocalRepo(fromURL) {
-		localSource, err := s.localFactory(fromURL, s.debug) 
+		localSource := s.localFactory(fromURL, s.debug)
 		copied, err = local.CopyConfig(serviceName, localSource, destination)
 		if err != nil {
 			return fmt.Errorf("failed to setup local repo: %w", err)
