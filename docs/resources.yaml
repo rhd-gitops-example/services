@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: git-app-repo
+spec:
+  params:
+  - name: revision
+    value: master
+  - name: url
+    #value: https://github.com/akihikokuroda/promote-demo.git
+    value: https://github.com/<github org>/<github repo>.git
+  type: git
+
+---
+
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: docker-app-image
+spec:
+  params:
+  - name: url
+    #value: akihikokuroda/app-image
+    value: <docker hub image name>
+  type: image
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: repopvc
+spec:
+  resources:
+    requests:
+      storage: 16Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

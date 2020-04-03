@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  name: promoterun
+spec:
+  params:
+  - name: github-secret
+    value: promotesecret
+  - name: github-config
+    value: promoteconfigmap
+  - name: from
+    value: "https://github.com/akihikokuroda/gitops-test.git"
+  - name: to
+    value: "https://github.com/akihikokuroda/gitops-prod.git"
+  - name: service
+    value: service-a
+  #serviceAccountName: tekton-triggers-controller
+  taskRef:
+    name: promote

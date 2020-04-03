@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: service-promote-pipelinerun
+spec:
+  resources:
+  - name: git-source
+    resourceRef:
+      name: git-app-repo
+  - name: docker-image
+    resourceRef:
+      name: docker-app-image
+  params:
+  - name: commitId
+    value: v1
+  - name: github-secret
+    value: promotesecret
+  - name: github-config
+    value: promoteconfigmap
+  - name: to
+    value: "https://github.com/<your github org>/<your github repo>.git"
+  - name: service
+    value: service-a
+  workspaces:
+  - name: repo-space
+    persistentVolumeClaim:
+      claimName: repopvc
+  serviceAccountName: demo
+  pipelineRef:
+    name: service-promote-pipeline
