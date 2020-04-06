@@ -31,7 +31,6 @@ func TestCopyConfig(t *testing.T) {
 	}
 }
 
-
 type mockSource struct {
 	files     []string
 	localPath string
@@ -45,11 +44,11 @@ type mockSource struct {
 // and then calls filePath.Walk() on /full/path/to/repo/services/ .
 // When CopyService() drives Walk(), 'base' is typically services/service-name
 // Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
-func (s *mockSource) Walk(base string, cb func(string, string) error) error {
+func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 	if s.files == nil {
 		return nil
 	}
-	base = filepath.Join(s.localPath, "config")
+	base := filepath.Join(s.localPath, "config")
 
 	for _, f := range s.files {
 		splitString := filepath.Dir(base) + "/"

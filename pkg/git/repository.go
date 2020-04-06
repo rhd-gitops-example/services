@@ -156,8 +156,8 @@ func envFromAuthor(a *Author) []string {
 		sf("GIT_AUTHOR_EMAIL", a.Email)}
 }
 
-// DeleteCachedRepo removes the local clones from the promotion cache
-func (r *Repository) DeleteCachedRepo() error {
+// DeleteCache removes the local clones from the promotion cache.
+func (r *Repository) DeleteCache() error {
 	err := os.RemoveAll(r.LocalPath)
 	if err != nil {
 		return fmt.Errorf("failed deleting `%s` : %w", r.LocalPath, err)

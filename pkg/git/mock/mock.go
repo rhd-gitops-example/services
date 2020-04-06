@@ -1,7 +1,6 @@
 package mock
 
 import (
-	"errors"
 	"io"
 	"path"
 	"path/filepath"
@@ -10,10 +9,6 @@ import (
 
 	"github.com/rhd-gitops-example/services/pkg/git"
 )
-
-/* FAIL_DELETING_REPO_BRANCH is a branch name that when used as a target branch will
-   cause the the deletion from the cache to fail (in tests only) */
-const FAIL_DELETING_REPO_BRANCH = "fail_to_delete_repo"
 
 type Repository struct {
 	currentBranch string
@@ -32,13 +27,13 @@ type Repository struct {
 	copyFileErr error
 
 	commits   []string
-	commitErr error
+	CommitErr error
 
 	pushedBranches []string
 	pushErr        error
 
-	deleted    bool
-	deletedErr error
+	deleted   bool
+	DeleteErr error
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
@@ -82,7 +77,7 @@ func (m *Repository) Commit(msg string, author *git.Author) error {
 		m.commits = []string{}
 	}
 	m.commits = append(m.commits, key(m.currentBranch, msg, author.Token))
-	return m.commitErr
+	return m.CommitErr
 }
 
 // Push fulfils the git.Repo interface.
@@ -148,15 +143,13 @@ func (m *Repository) AddFiles(names ...string) {
 	}
 }
 
-// DeleteCachedRepo deletes the repo from the local cache directory
-func (m *Repository) DeleteCachedRepo() error {
-	if m.currentBranch == FAIL_DELETING_REPO_BRANCH {
-		m.deleted = false
-		m.deletedErr = errors.New("MOCK FAILURE DELETING REPO MESSAGE")
-	} else {
-		m.deleted = true
+// DeleteCache deletes the repo from the local cache directory.
+func (m *Repository) DeleteCache() error {
+	if m.DeleteErr != nil {
+		return m.DeleteErr
 	}
-	return m.deletedErr
+	m.deleted = true
+	return nil
 }
 
 // AssertBranchCreated asserts that the named branch was created from the from
@@ -200,7 +193,7 @@ func (m *Repository) AssertDeletedFromCache(t *testing.T) {
 // AssertNotDeletedFromCache asserts that delete was called to remove the local repo
 func (m *Repository) AssertNotDeletedFromCache(t *testing.T) {
 	if m.deleted {
-		t.Fatalf("repo was unexpectedly deleted from the promotion cache directory : %w", m.deletedErr)
+		t.Fatal("repo was unexpectedly deleted from the promotion cache directory")
 	}
 }
 
