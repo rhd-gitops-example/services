@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: service-promote-pipelinerun
+  generateName: service-promote-pipelinerun-
 spec:
   resources:
   - name: git-source

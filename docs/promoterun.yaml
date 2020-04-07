@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
-  name: promoterun
+  generateName: promoterun-
 spec:
   params:
   - name: github-secret
