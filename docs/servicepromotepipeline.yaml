@@ -1,0 +1,71 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: service-promote-pipeline
+spec:
+  workspaces:
+  - name: repo-space
+  params:
+  - name: commitId
+    type: string
+    description: commit ID of the source repository.
+  - name: github-secret
+    type: string
+    description: name of the secret that contains the GitHub access token, the access token must be in a token key.
+  - name: from
+    type: string
+    description: github repository url to be promoted from
+    default: /workspace/repo
+  - name: to
+    type: string
+    description: github repository url to be promoted to
+  - name: service
+    type: string
+    description: service name to be promoted
+  - name: github-config
+    type: string
+    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitco
+  resources: 
+  - name: git-source
+    type: git
+  - name: docker-image
+    type: image
+  tasks:
+  - name: build-simple
+    taskRef:
+      name: build-push
+    workspaces:
+    - name: repo
+      workspace: repo-space
+    params:
+    - name: commitId
+      value: $(params.commitId)
+    resources:
+      inputs:
+      - name: git-source
+        resource: git-source
+      outputs:
+      - name: builtImage
+        resource: docker-image
+  - name: promote
+    runAfter: [build-simple]
+    taskRef:
+      name: service-promote
+    workspaces:
+    - name: repo
+      workspace: repo-space
+    params:
+    - name: github-secret
+      value: $(params.github-secret)
+    - name: from
+      value: $(params.from)
+    - name: to
+      value: $(params.to)
+    - name: service
+      value: $(params.service)
+    - name: github-config
+      value: $(params.github-config)
+
+
+
+

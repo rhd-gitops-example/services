@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-github
+  annotations:
+    tekton.dev/git-0: https://github.com
+type: kubernetes.io/basic-auth
+stringData:
+  username: <github user name>
+  password: <github personal access token>
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-dockerhub
+  annotations:
+    tekton.dev/docker-0: https://index.docker.io/v1/
+type: kubernetes.io/basic-auth
+stringData:
+  username: <docker hub user id>
+  password: <docker hub password>
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo
+secrets:
+  - name: secret-github
+  - name: secret-dockerhub

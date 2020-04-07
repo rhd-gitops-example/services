@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: promote
+spec:
+  params:
+  - name: github-secret
+    type: string
+    description: seret name of the github that has the access token. The key name is token.
+  - name: from
+    type: string
+    description: github repository url to be promoted from
+  - name: to
+    type: string
+    description: github repository url to be promoted to
+  - name: service
+    type: string
+    description: service name to be promoted
+  - name: github-config
+    type: string
+    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=gitconfig -n promote"
+  volumes:
+  - name: gitconfig
+    configMap:
+      name: $(params.github-config)
+      items:
+        - key: gitconfig
+          path: gitconfig
+  steps:
+  - name: promote
+    #image: akihikokuroda/promote
+    image: <image name>
+    imagePullPolicy: Always
+    volumeMounts:
+    - name: gitconfig
+      mountPath: /root
+    script: |
+      #!/bin/sh
+      cp /root/gitconfig $HOME/.gitconfig
+      services promote --from $(params.from) --to $(params.to) --service $(params.service) 
+    env:
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: $(params.github-secret)
+          key: token
+
