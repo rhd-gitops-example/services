@@ -28,9 +28,17 @@
 
 - edit all yaml files marked as (template) and gitconfig file.  `<xxx>` must be replaced with the real value
 - create a new namespace e.g. `kubectl create ns promote`
-- apply auth.yaml, promotesecret.yaml, resources.yaml, build-task.yaml, servicepromote.yaml and servicepromotepipeline.yaml in the namespace e.g. `kubectl apply -n <namespace> -f <yaml file name>`
+- apply auth.yaml, promotesecret.yaml, resources.yaml, build-task.yaml, servicepromote.yaml, servicepromotepipeline.yaml and promote.yaml in the namespace e.g. `kubectl -n <namespace> apply -f <yaml file name>
 - create a configmap by `kubectl create configmap promoteconfigmap --from-file=gitconfig -n <namespace>`
 
 ## Execute pipeline
 
+The servicepromotepipelinerun is designed to build your microservice from its development repository and then promote the new configuration to a gitops repository (some dev/staging/test environment).
+
 - create the servicepromotepipelinerun using the servicepromotepipelinerun.yaml e.g. `kubectl create -n <namespace> -f servicepromotepipelinerun.yaml`
+
+## Promote to Prod
+
+You can use the promoterun taskrun to run a subsequent promote from one gitops repo to another, e.g staging to prod, after merging the pull request on your first gitops repository.
+
+- create the promoterun taskrun by running `kubectl create -n <namespace> -f promoterun.yaml`
