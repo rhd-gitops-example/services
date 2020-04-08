@@ -50,9 +50,9 @@ go test ./pkg/git -run TestCopyServiceWithFailureCopying
 
 This section is temporary. To create a sample promotion Pull Request, until https://github.com/rhd-gitops-example/services/issues/8 is done:
 
-- Copy https://github.com/rhd-gitops-example/gitops-example-dev
-- Copy https://github.com/rhd-gitops-example/gitops-example-staging
-- Build the code: `go build ./cmd/services`
+- Fork the repository https://github.com/rhd-gitops-example/gitops-example-dev
+- Fork the repository https://github.com/rhd-gitops-example/gitops-example-staging
+- Inside the services folder build the code: `go build ./cmd/services`
 - export GITHUB_TOKEN=[your token]
 - Substitute your repository URLs for those in square brackets:
 
@@ -63,7 +63,7 @@ This section is temporary. To create a sample promotion Pull Request, until http
 At a high level the services command currently:
 
 - git clones the source and target repositories into ~/.promotion/cache
-- creates a branch (as per the given --branch-name)
+- creates a branch
 - checks out the branch
 - copies the relevant files from the cloned source into the cloned target
 - pushes the cloned target
@@ -72,7 +72,6 @@ At a high level the services command currently:
 ## Important notes:
 
 - We need to remove the local cache between requests. See https://github.com/rhd-gitops-example/services/issues/20. Until then, add `rm -rf ~/.promotion/cache; ` before subsequent requests.
-- New pull requests need new branches (i.e you cannot run the same command twice). Add `--branch [unique branch name]` before submitting further promotion PRs. See https://github.com/rhd-gitops-example/services/issues/21.
 - See https://github.com/rhd-gitops-example/services/issues/19 for an issue related to problems 'promoting' config from a source repo into a gitops repo. 
 
 ## Release process
