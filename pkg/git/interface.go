@@ -20,6 +20,8 @@ type Source interface {
 type Repo interface {
 	Destination
 	Source
+	GetName() string
+	GetCommitID() string
 	Clone() error
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error

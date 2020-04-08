@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -172,6 +173,20 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 
 	stagingRepo.AssertNotDeletedFromCache(t)
 	devRepo.AssertDeletedFromCache(t)
+}
+
+func TestGenerateBranchWithSuccess(t *testing.T) {
+    repo := mock.New("/dev", "master")
+	GenerateBranchWithSuccess(t, repo)
+}
+
+func GenerateBranchWithSuccess(t *testing.T, repo git.Repo) {
+	branch := generateBranch(repo)
+	nameRegEx := "^([0-9A-Za-z]+)-([0-9a-z]{7})-([0-9A-Za-z]{5})$"
+	_, err := regexp.Match(nameRegEx, []byte(branch))
+	if err != nil {
+		t.Fatalf("failed to generate a branch name matching pattern %s", nameRegEx)
+	}
 }
 
 type mockSource struct {

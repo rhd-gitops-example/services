@@ -34,6 +34,10 @@ type Repository struct {
 
 	deleted   bool
 	DeleteErr error
+
+	commitID string
+
+	repoName string
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
@@ -48,6 +52,16 @@ func (m *Repository) Checkout(branch string) error {
 		m.currentBranch = branch
 	}
 	return m.checkoutErr
+}
+
+func (m *Repository) GetName() string {
+	m.repoName = "fakeRepoName"
+	return m.repoName
+}
+
+func (m *Repository) GetCommitID() string {
+	m.commitID = "fakeCommitString"
+	return m.commitID
 }
 
 // CheckoutAndCreate fulfils the git.Repo interface.

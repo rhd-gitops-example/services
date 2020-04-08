@@ -60,6 +60,15 @@ func (r *Repository) CheckoutAndCreate(branch string) error {
 	return err
 }
 
+func (r *Repository) GetName() string {
+	return r.repoName
+}
+
+func (r *Repository) GetCommitID() string {
+	commitID, _ := r.execGit(r.repoPath(), nil, "rev-parse", "--short", "HEAD")
+	return string(commitID)
+}
+
 func (r *Repository) Walk(base string, cb func(prefix, name string) error) error {
 	repoBase := r.repoPath(base)
 	prefix := filepath.Dir(repoBase) + "/"
