@@ -24,7 +24,7 @@ func TestRepoName(t *testing.T) {
 		wantErr  string
 	}{
 		{testRepository, "staging", ""},
-		{"https://github.com/mnuttall", "", "could not identify repo: https://github.com/mnuttall"},
+		{"https://github.com/mnuttall", "", "could not identify repository name: https://github.com/mnuttall"},
 	}
 
 	for _, tt := range nameTests {
@@ -259,7 +259,7 @@ func TestDebugEnabled(t *testing.T) {
 	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), true)
 	assertNoError(t, err)
 	if !r.debug {
-	  t.Fatalf("Debug not set to true")
+		t.Fatalf("Debug not set to true")
 	}
 }
 

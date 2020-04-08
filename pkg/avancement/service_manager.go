@@ -2,6 +2,7 @@ package avancement
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -94,7 +95,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	} else {
 		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
 		if errorSource != nil {
-			return fmt.Errorf("failed to checkout repo: %w", errorSource)
+			return git.GitError("error checking out source repository from Git", fromURL)
 		}
 		reposToDelete = append(reposToDelete, source)
 	}
@@ -105,7 +106,11 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 
 	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
 	if err != nil {
-		return fmt.Errorf("failed to checkout repo: %w", err)
+		if git.IsGitError(err) {
+			return git.GitError(fmt.Sprintf("failed to clone destination repository, error: %s", err.Error()), toURL)
+		}
+		// This would be a checkout error as the clone error gives us the above gitError instead
+		return fmt.Errorf("failed to checkout destination repository, error: %w", err)
 	}
 	reposToDelete = append(reposToDelete, destination)
 
@@ -113,7 +118,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	if isLocal {
 		copied, err = local.CopyConfig(serviceName, localSource, destination)
 		if err != nil {
-			return fmt.Errorf("failed to setup local repo: %w", err)
+			return fmt.Errorf("failed to set up local repository: %w", err)
 		}
 	} else {
 		copied, err = git.CopyService(serviceName, source, destination)
@@ -139,13 +144,14 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	}
 
 	if err := destination.Push(newBranchName); err != nil {
-		return fmt.Errorf("failed to push: %w", err)
+		return fmt.Errorf("failed to push to Git repository - check the access token is correct with sufficient permissions: %w", err)
 	}
 
 	ctx := context.Background()
 	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, commitMsg, s.clientFactory(s.author.Token), isLocal)
 	if err != nil {
-		return fmt.Errorf("failed to create a pull-request for branch %s in %v: %w", newBranchName, toURL, err)
+		message := fmt.Sprintf("failed to create a pull-request for branch %s, error: %s", newBranchName, err)
+		return git.GitError(message, toURL)
 	}
 	log.Printf("created PR %d", pr.Number)
 	return nil
@@ -154,11 +160,14 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, error) {
 	repo, err := s.cloneRepo(repoURL, branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone source repo %s: %w", repoURL, err)
+		if git.IsGitError(err) {
+			return nil, git.GitError("failed to clone source repository", repoURL)
+		}
+		return nil, err
 	}
 	err = repo.Checkout(branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to checkout branch %s in repo %s: %w", branch, repoURL, err)
+		return nil, git.GitError(fmt.Sprintf("failed to checkout branch %s, error: %s", branch, err.Error()), repoURL)
 	}
 	return repo, nil
 }
@@ -166,11 +175,11 @@ func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, e
 func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Repo, error) {
 	repo, err := s.cloneRepo(repoURL, branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone destination repo %s: %w", repoURL, err)
+		return nil, git.GitError(err.Error(), repoURL)
 	}
 	err = repo.CheckoutAndCreate(branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to checkout branch %s in repo %s: %w", branch, repoURL, err)
+		return nil, fmt.Errorf("failed to checkout branch %s: %w", branch, err)
 	}
 	return repo, nil
 }
@@ -183,7 +192,8 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	}
 	repo, err := s.repoFactory(repoURL, path.Join(s.cacheDir, encode(repoURL, branch)), s.debug)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create repo for URL %s: %w", repoURL, err)
+		message := fmt.Sprintf("failed to clone repository, error is: %s", err.Error())
+		return nil, git.GitError(message, repoURL)
 	}
 	err = repo.Clone()
 	if err != nil {
@@ -203,7 +213,7 @@ func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commi
 		// TODO: improve this error message
 		return nil, err
 	}
-	// TODO: come up with a better way of generating the repo URL (this
+	// TODO: come up with a better way of generating the repository URL (this
 	// only works for GitHub)
 	pr, _, err := client.PullRequests.Create(ctx, fmt.Sprintf("%s/%s", user, repo), prInput)
 	return pr, err
@@ -215,8 +225,11 @@ func encode(gitURL, branch string) string {
 
 func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	parsed, err := url.Parse(s)
+	// If this does error (e.g. if there's a leading ":" character") one would see
+	// parse ":thetoken@github.com": missing protocol scheme
+	// thus surfacing the token. So intentionally display a generic parse problem
 	if err != nil {
-		return "", fmt.Errorf("failed to parse git repo url %v: %w", s, err)
+		return "", errors.New("failed to parse git repository url")
 	}
 	if parsed.Scheme != "https" || parsed.User != nil {
 		return s, nil
