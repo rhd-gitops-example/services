@@ -26,10 +26,6 @@ type ServiceManager struct {
 	debug         bool
 }
 
-const (
-	defaultCommitMsg = "this is a commit"
-)
-
 type scmClientFactory func(token string) *scm.Client
 type repoFactory func(url, localPath string, debug bool) (git.Repo, error)
 type localFactory func(localPath string, debug bool) git.Source
@@ -75,7 +71,7 @@ const fromBranch = "master"
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName string, keepCache bool) error {
+func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, message string, keepCache bool) error {
 	var source, destination git.Repo
 	var reposToDelete []git.Repo
 
@@ -92,7 +88,8 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 
 	var localSource git.Source
 	var errorSource error
-	if fromLocalRepo(fromURL) {
+	isLocal := fromLocalRepo(fromURL)
+	if isLocal {
 		localSource = s.localFactory(fromURL, s.debug)
 	} else {
 		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
@@ -113,7 +110,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 	reposToDelete = append(reposToDelete, destination)
 
 	var copied []string
-	if fromLocalRepo(fromURL) {
+	if isLocal {
 		copied, err = local.CopyConfig(serviceName, localSource, destination)
 		if err != nil {
 			return fmt.Errorf("failed to setup local repo: %w", err)
@@ -125,18 +122,28 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName stri
 		}
 	}
 
+	commitMsg := message
+	if commitMsg == "" {
+		if isLocal {
+			commitMsg = fmt.Sprintf("Promotion of service `%s` from local filesystem directory `%s`.", serviceName, fromURL)
+		} else {
+			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
+		}
+	}
+
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
-	if err := destination.Commit(defaultCommitMsg, s.author); err != nil {
+	if err := destination.Commit(commitMsg, s.author); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
+
 	if err := destination.Push(newBranchName); err != nil {
 		return fmt.Errorf("failed to push: %w", err)
 	}
 
 	ctx := context.Background()
-	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, s.clientFactory(s.author.Token))
+	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, commitMsg, s.clientFactory(s.author.Token), isLocal)
 	if err != nil {
 		return fmt.Errorf("failed to create a pull-request for branch %s in %v: %w", newBranchName, toURL, err)
 	}
@@ -185,13 +192,12 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	return repo, nil
 }
 
-func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName string, client *scm.Client) (*scm.PullRequest, error) {
-	prInput, err := makePullRequestInput(fromURL, toURL, newBranchName)
+func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commitMsg string, client *scm.Client, fromLocal bool) (*scm.PullRequest, error) {
+	prInput, err := makePullRequestInput(fromLocal, fromURL, toURL, newBranchName, commitMsg)
 	if err != nil {
 		// TODO: improve this error message
 		return nil, err
 	}
-
 	user, repo, err := util.ExtractUserAndRepo(toURL)
 	if err != nil {
 		// TODO: improve this error message
@@ -218,6 +224,7 @@ func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	parsed.User = url.UserPassword("promotion", a.Token)
 	return parsed.String(), nil
 }
+
 func fromLocalRepo(s string) bool {
 	parsed, err := url.Parse(s)
 	if err != nil || parsed.Scheme == "" {
@@ -230,6 +237,13 @@ func generateBranch(repo git.Repo) string {
 	uniqueString := uuid.New()
 	runes := []rune(uniqueString.String())
 	branchName := repo.GetName() + "-" + repo.GetCommitID() + "-" + string(runes[0:5])
-	branchName = strings.Replace(branchName, "\n","",-1)
+	branchName = strings.Replace(branchName, "\n", "", -1)
 	return branchName
+}
+
+// generateDefaultCommitMsg constructs a default commit message based on the source information.
+func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
+	commit := sourceRepo.GetCommitID()
+	msg := fmt.Sprintf("Promoting service `%s` at commit `%s` from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
+	return msg
 }

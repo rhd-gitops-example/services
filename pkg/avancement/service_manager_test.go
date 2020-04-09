@@ -2,11 +2,12 @@ package avancement
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -21,14 +22,18 @@ const (
 )
 
 func TestPromoteWithSuccessKeepCacheTrue(t *testing.T) {
-	promoteWithSuccess(t, true)
+	promoteWithSuccess(t, true, "")
 }
 
 func TestPromoteWithSuccessKeepCacheFalse(t *testing.T) {
-	promoteWithSuccess(t, false)
+	promoteWithSuccess(t, false, "")
 }
 
-func promoteWithSuccess(t *testing.T, keepCache bool) {
+func TestPromoteWithSuccessCustomMsg(t *testing.T) {
+	promoteLocalWithSuccess(t, true, "custom commit message here")
+}
+
+func promoteWithSuccess(t *testing.T, keepCache bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
@@ -46,14 +51,20 @@ func promoteWithSuccess(t *testing.T, keepCache bool) {
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch, keepCache)
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	expectedCommitMsg := msg
+	if msg == "" {
+		commit := devRepo.GetCommitID()
+		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+	}
+
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
-	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
 	if keepCache {
@@ -66,14 +77,18 @@ func promoteWithSuccess(t *testing.T, keepCache bool) {
 }
 
 func TestPromoteLocalWithSuccessKeepCacheFalse(t *testing.T) {
-	promoteLocalWithSuccess(t, false)
+	promoteLocalWithSuccess(t, false, "")
 }
 
 func TestPromoteLocalWithSuccessKeepCacheTrue(t *testing.T) {
-	promoteLocalWithSuccess(t, true)
+	promoteLocalWithSuccess(t, true, "")
 }
 
-func promoteLocalWithSuccess(t *testing.T, keepCache bool) {
+func TestPromoteLocalWithSuccessCustomMsg(t *testing.T) {
+	promoteLocalWithSuccess(t, true, "custom commit message supplied")
+}
+
+func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	stagingRepo := mock.New("/staging", "master")
@@ -93,14 +108,19 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool) {
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, keepCache)
+	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	expectedCommitMsg := msg
+	if expectedCommitMsg == "" {
+		expectedCommitMsg = "Promotion of service `my-service` from local filesystem directory `/root/repo`."
+	}
+
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
-	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
 	if keepCache {
@@ -161,14 +181,17 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch, false)
+	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	commit := devRepo.GetCommitID()
+	expectedCommitMsg := fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
-	stagingRepo.AssertCommit(t, dstBranch, defaultCommitMsg, author)
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
 	stagingRepo.AssertNotDeletedFromCache(t)
@@ -176,7 +199,7 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 }
 
 func TestGenerateBranchWithSuccess(t *testing.T) {
-    repo := mock.New("/dev", "master")
+	repo := mock.New("/dev", "master")
 	GenerateBranchWithSuccess(t, repo)
 }
 
