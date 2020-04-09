@@ -253,6 +253,16 @@ func TestPush(t *testing.T) {
 	assertNoError(t, err)
 }
 
+func TestDebugEnabled(t *testing.T) {
+	tempDir, cleanup := makeTempDir(t)
+	defer cleanup()
+	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), true)
+	assertNoError(t, err)
+	if !r.debug {
+	  t.Fatalf("Debug not set to true")
+	}
+}
+
 func cloneTestRepository(t *testing.T) (*Repository, func()) {
 	tempDir, cleanup := makeTempDir(t)
 	r, err := NewRepository(authenticatedURL(t), tempDir, false)

@@ -32,7 +32,7 @@ func NewRepository(repoURL, localPath string, debug bool) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, logger: log.Printf}, nil
+	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, logger: log.Printf, debug: debug}, nil
 }
 
 func (g *Repository) repoPath(extras ...string) string {
