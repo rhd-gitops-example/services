@@ -9,7 +9,7 @@ import (
 )
 
 func TestMakePullRequestInput(t *testing.T) {
-	pr, err := makePullRequestInput("https://example.com/project/dev-env.git", "https://example.com/project/prod-env.git", "my-test-branch")
+	pr, err := makePullRequestInput(false, "https://example.com/project/dev-env.git", "https://example.com/project/prod-env.git", "my-test-branch", "foo bar wibble")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,7 +18,7 @@ func TestMakePullRequestInput(t *testing.T) {
 		Title: "promotion from dev-env to prod-env",
 		Head:  "project:my-test-branch",
 		Base:  "master",
-		Body:  "this is a test body",
+		Body:  "foo bar wibble",
 	}
 
 	if diff := cmp.Diff(want, pr); diff != "" {

@@ -186,7 +186,7 @@ func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name s
 // message and auth token.
 func (m *Repository) AssertCommit(t *testing.T, branch, msg string, a *git.Author) {
 	if !hasString(key(branch, msg, a.Token), m.commits) {
-		t.Fatalf("no matching commit %#v in branch %s using token %s", msg, branch, a.Token)
+		t.Fatalf("no matching commit %#v in branch %s using token %s.  Commits available: %+v", msg, branch, a.Token, m.commits)
 	}
 }
 

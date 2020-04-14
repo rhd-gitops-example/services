@@ -21,6 +21,7 @@ const (
 	toFlag          = "to"
 	serviceFlag     = "service"
 	cacheDirFlag    = "cache-dir"
+	msgFlag         = "commit-message"
 	nameFlag        = "commit-name"
 	emailFlag       = "commit-email"
 	debugFlag       = "debug"
@@ -77,6 +78,12 @@ var (
 			Required: false,
 			EnvVars:  []string{"COMMIT_EMAIL"},
 		},
+		&cli.StringFlag{
+			Name:     msgFlag,
+			Usage:    "the msg to use on the resultant commit and pull request",
+			Required: false,
+			EnvVars:  []string{"COMMIT_MSG"},
+		},
 		&cli.BoolFlag{
 			Name:     debugFlag,
 			Usage:    "additional debug logging output",
@@ -121,6 +128,7 @@ func promoteAction(c *cli.Context) error {
 	newBranchName := c.String(branchNameFlag)
 	debug := c.Bool(debugFlag)
 	keepCache := c.Bool(keepCacheFlag)
+	msg := c.String(msgFlag)
 
 	cacheDir, err := homedir.Expand(c.String(cacheDirFlag))
 	if err != nil {
@@ -131,7 +139,7 @@ func promoteAction(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName, keepCache)
+	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
 }
 
 func newAuthor(c *cli.Context) (*git.Author, error) {
