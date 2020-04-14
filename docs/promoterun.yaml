@@ -9,11 +9,10 @@ spec:
   - name: github-config
     value: promoteconfigmap
   - name: from
-    value: "https://github.com/akihikokuroda/gitops-test.git"
+    value: "https://github.com/<OWNER>/<GITOPS-TEST-REPO>"
   - name: to
-    value: "https://github.com/akihikokuroda/gitops-prod.git"
+    value: "https://github.com/<OWNER>/<GITOPS-PROD-REPO>"
   - name: service
     value: service-a
-  #serviceAccountName: tekton-triggers-controller
   taskRef:
     name: promote
