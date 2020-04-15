@@ -129,6 +129,10 @@ func (s *mockSource) Walk(base string, cb func(string, string) error) error {
 	return nil
 }
 
+func (s *mockSource) GetName() string {
+	return "local-dir-repo-name-unknown"
+}
+
 func (s *mockSource) addFile(name string) {
 	if s.files == nil {
 		s.files = []string{}

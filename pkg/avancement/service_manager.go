@@ -91,16 +91,18 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	isLocal := fromLocalRepo(fromURL)
 	if isLocal {
 		localSource = s.localFactory(fromURL, s.debug)
+		if newBranchName == "" {
+			newBranchName = generateBranchForLocalSource(localSource)
+		}
 	} else {
 		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
 		if errorSource != nil {
 			return fmt.Errorf("failed to checkout repo: %w", errorSource)
 		}
 		reposToDelete = append(reposToDelete, source)
-	}
-
-	if newBranchName == "" {
-		newBranchName = generateBranch(source)
+		if newBranchName == "" {
+			newBranchName = generateBranch(source)
+		}
 	}
 
 	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
@@ -237,6 +239,14 @@ func generateBranch(repo git.Repo) string {
 	uniqueString := uuid.New()
 	runes := []rune(uniqueString.String())
 	branchName := repo.GetName() + "-" + repo.GetCommitID() + "-" + string(runes[0:5])
+	branchName = strings.Replace(branchName, "\n", "", -1)
+	return branchName
+}
+
+func generateBranchForLocalSource(source git.Source) string {
+	uniqueString := uuid.New()
+	runes := []rune(uniqueString.String())
+	branchName := source.GetName() + "-" + "local-dir" + "-" + string(runes[0:5])
 	branchName = strings.Replace(branchName, "\n", "", -1)
 	return branchName
 }
