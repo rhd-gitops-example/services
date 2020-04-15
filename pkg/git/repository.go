@@ -2,6 +2,7 @@ package git
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -45,8 +46,8 @@ func (r *Repository) Clone() error {
 	if err != nil {
 		return fmt.Errorf("error creating the cache dir %s: %w", r.LocalPath, err)
 	}
-	out, err := r.execGit(r.LocalPath, nil, "clone", r.RepoURL)
-	log.Printf("%s\n", out)
+	// Intentionally omit output as it can contain an access token
+	_, err = r.execGit(r.LocalPath, nil, "clone", r.RepoURL)
 	return err
 }
 
@@ -144,11 +145,12 @@ func (r *Repository) execGit(workingDir string, env []string, args ...string) ([
 func repoName(u string) (string, error) {
 	parsed, err := url.Parse(u)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse URL '%s': %w", u, err)
+		// Don't surface the URL as it could contain a token
+		return "", errors.New("failed to parse the URL when determining repository name")
 	}
 	parts := strings.Split(parsed.Path, "/")
 	if len(parts) < 3 {
-		return "", fmt.Errorf("could not identify repo: %s", u)
+		return "", fmt.Errorf("could not identify repository name: %s", u)
 	}
 	return strings.TrimSuffix(parts[len(parts)-1], ".git"), nil
 }

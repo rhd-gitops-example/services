@@ -13,6 +13,7 @@ import (
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/rhd-gitops-example/services/pkg/git/mock"
+	"github.com/rhd-gitops-example/services/test"
 )
 
 const (
@@ -280,4 +281,27 @@ func (s *mockSource) AddFiles(name string) {
 		s.files = []string{}
 	}
 	s.files = append(s.files, path.Join(s.localPath, name))
+}
+
+func TestRepositoryCloneErrorOmitsToken(t *testing.T) {
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	client, _ := fakescm.NewDefault()
+	fakeClientFactory := func(s string) *scm.Client {
+		return client
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = fakeClientFactory
+
+	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+		// This actually causes the error and results in trying to create a repository
+		// which can surface the token
+		errorMessage := fmt.Errorf("failed to clone repository %s: exit status 128", dev)
+		return nil, errorMessage
+	}
+	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
+	if err != nil {
+		devRepoToUseInError := fmt.Sprintf(".*%s", dev)
+		test.AssertErrorMatch(t, devRepoToUseInError, err)
+	}
 }
