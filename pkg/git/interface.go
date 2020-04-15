@@ -15,16 +15,16 @@ type Source interface {
 	// Walk walks the repository tree, calling the callback with the prefix and
 	// filename.
 	Walk(path string, cb func(prefix, name string) error) error
+	GetName() string
 }
 
 type Repo interface {
 	Destination
 	Source
-	GetName() string
-	GetCommitID() string
 	Clone() error
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
+	GetCommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error
 	Push(branch string) error

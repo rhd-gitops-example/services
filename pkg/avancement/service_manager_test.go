@@ -203,12 +203,26 @@ func TestGenerateBranchWithSuccess(t *testing.T) {
 	GenerateBranchWithSuccess(t, repo)
 }
 
+func TestGenerateBranchForLocalSource(t *testing.T) {
+	source := NewLocal("/path/to/topLevel")
+	GenerateBranchForLocalWithSuccess(t, source)
+}
+
 func GenerateBranchWithSuccess(t *testing.T, repo git.Repo) {
 	branch := generateBranch(repo)
 	nameRegEx := "^([0-9A-Za-z]+)-([0-9a-z]{7})-([0-9A-Za-z]{5})$"
 	_, err := regexp.Match(nameRegEx, []byte(branch))
 	if err != nil {
 		t.Fatalf("failed to generate a branch name matching pattern %s", nameRegEx)
+	}
+}
+
+func GenerateBranchForLocalWithSuccess(t *testing.T, source git.Source) {
+	branch := generateBranchForLocalSource(source)
+	nameRegEx := "^path-to-topLevel-local-dir-([0-9A-Za-z]{5})$"
+	_, err := regexp.Match(nameRegEx, []byte(branch))
+	if err != nil {
+		t.Fatalf("generated name `%s` for local case %s failed to matching pattern %s", nameRegEx, source.GetName(), nameRegEx)
 	}
 }
 
@@ -246,6 +260,10 @@ func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 		}
 	}
 	return nil
+}
+
+func (s *mockSource) GetName() string {
+	return "mock-source-name"
 }
 
 func (s *mockSource) AddFiles(name string) {

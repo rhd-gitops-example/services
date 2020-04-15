@@ -63,6 +63,10 @@ func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 	return nil
 }
 
+func (s *mockSource) GetName() string {
+	return "AlwaysTheSameName"
+}
+
 func (s *mockSource) addFile(name string) {
 	if s.files == nil {
 		s.files = []string{}
