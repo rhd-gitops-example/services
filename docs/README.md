@@ -1,4 +1,10 @@
-# Tekton pipeline / task example
+# Tekton pipeline / task example  
+
+A small example of using promote in a tekton pipeline to promote a service's config to a gitops repo.  Creation of the
+pipelinerun (using servicepromotepipelinerun.yaml) will drive the pipeline to clone, build and push the service and then promote the config from the local clone into your staging/test gitops repo.
+
+Creation of a taskrun (using the promoterun.yaml) will then further promote from one gitops repo to another, i.e from
+staging to production.
 
 ## Files
 
@@ -20,15 +26,15 @@
 
 - clone this repository
 - run `docker build -t <image name> .` in repository root directory
-- run `docker tag <image name> <your docker hub id>/<image name>` toi tag the image
+- run `docker tag <image name> <your docker hub id>/<image name>` to tag the image
 - run `docker login` to login to the docker hub
 - run `docker push <your docker hub id>/<image name>` to push the image to the docker hub
 
 ## Create Tekton resource
 
-- edit all yaml files marked as (template) and gitconfig file.  `<xxx>` must be replaced with the real value
+- edit all yaml files marked as (template) in the section above and also the gitconfig file.  Entries of the form `<some property>` must be replaced with the real value, i.e at occurences such as `<image name>`, `<github org>/<github repo>` etc...
 - create a new namespace e.g. `kubectl create ns promote`
-- apply auth.yaml, promotesecret.yaml, resources.yaml, build-task.yaml, servicepromote.yaml, servicepromotepipeline.yaml and promote.yaml in the namespace e.g. `kubectl -n <namespace> apply -f <yaml file name>
+- apply auth.yaml, promotesecret.yaml, resources.yaml, build-task.yaml, servicepromote.yaml, servicepromotepipeline.yaml and promote.yaml in the namespace e.g. `kubectl -n <namespace> apply -f <yaml file name>`
 - create a configmap by `kubectl create configmap promoteconfigmap --from-file=gitconfig -n <namespace>`
 
 ## Execute pipeline
