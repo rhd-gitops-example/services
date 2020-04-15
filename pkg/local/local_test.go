@@ -64,7 +64,7 @@ func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 }
 
 func (s *mockSource) GetName() string {
-	return "AlwaysTheSameName"
+	return "/workspace/path/to/dir"
 }
 
 func (s *mockSource) addFile(name string) {

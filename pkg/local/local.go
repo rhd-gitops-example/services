@@ -58,6 +58,7 @@ func (l *Local) Walk(_ string, cb func(prefix, name string) error) error {
 // GetName - we're using a directory that may not be a git repo, all we know is our path
 func (l *Local) GetName() string {
 	path := filepath.ToSlash(l.LocalPath)
+	path = strings.TrimLeft(path, "/")
 	name := strings.ReplaceAll(path, "/", "-")
 	return name
 }

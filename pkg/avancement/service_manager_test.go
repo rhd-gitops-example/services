@@ -211,18 +211,24 @@ func TestGenerateBranchForLocalSource(t *testing.T) {
 func generateBranchWithSuccess(t *testing.T, repo git.Repo) {
 	branch := generateBranch(repo)
 	nameRegEx := "^([0-9A-Za-z]+)-([0-9a-z]{7})-([0-9A-Za-z]{5})$"
-	_, err := regexp.Match(nameRegEx, []byte(branch))
+	matched, err := regexp.Match(nameRegEx, []byte(branch))
 	if err != nil {
-		t.Fatalf("failed to generate a branch name matching pattern %s", nameRegEx)
+		t.Fatalf("Regexp err %s in generateBranchWithSuccess matching pattern %s to %s", err, nameRegEx, branch)
+	}
+	if !matched {
+		t.Fatalf("generated name `%s` failed to match pattern %s", branch, nameRegEx)
 	}
 }
 
 func generateBranchForLocalWithSuccess(t *testing.T, source git.Source) {
 	branch := generateBranchForLocalSource(source)
 	nameRegEx := "^path-to-topLevel-local-dir-([0-9A-Za-z]{5})$"
-	_, err := regexp.Match(nameRegEx, []byte(branch))
+	matched, err := regexp.Match(nameRegEx, []byte(branch))
 	if err != nil {
-		t.Fatalf("generated name `%s` for local case %s failed to matching pattern %s", nameRegEx, source.GetName(), nameRegEx)
+		t.Fatalf("Regexp err %s in generateBranchForLocalWithSuccess matching pattern %s to %s", err, nameRegEx, branch)
+	}
+	if !matched {
+		t.Fatalf("generated name `%s` for local case %s failed to matching pattern %s", branch, source.GetName(), nameRegEx)
 	}
 }
 
@@ -263,7 +269,10 @@ func (s *mockSource) Walk(_ string, cb func(string, string) error) error {
 }
 
 func (s *mockSource) GetName() string {
-	return "mock-source-name"
+	path := filepath.ToSlash(s.localPath)
+	path = strings.TrimLeft(path, "/")
+	name := strings.ReplaceAll(path, "/", "-")
+	return name
 }
 
 func (s *mockSource) AddFiles(name string) {
