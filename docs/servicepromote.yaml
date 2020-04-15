@@ -31,7 +31,7 @@ spec:
           path: gitconfig
   steps:
   - name: promote
-    image: <image name>
+    image: quay.io/redhat-developer/gitops-cli
     imagePullPolicy: Always
     volumeMounts:
     - name: gitconfig
@@ -39,7 +39,7 @@ spec:
     script: |
       #!/bin/sh
       cp /root/gitconfig $HOME/.gitconfig
-      services promote --from $(params.from) --to $(params.to) --service $(params.service) 
+      services promote --from $(params.from) --to $(params.to) --service $(params.service)
     env:
     - name: GITHUB_TOKEN
       valueFrom:

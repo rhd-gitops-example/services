@@ -15,20 +15,12 @@ staging to production.
 - resources.yaml: (template) create pipeline resources for github and docker repository
 
 - build-task.yaml: create a build push task
-- servicepromote.yaml: (template)create a promote from service repo to env repo task
+- servicepromote.yaml: create a promote from service repo to env repo task
 - servicepromotepipeline.yaml: create a pipeline that executes build, push and promote
 - servicepromotepipelinerun.yaml: create a pipelinerun that executes the servicepromotepipeline
 
 - promote.yaml: (template)create a promote from one env repo to another env repo task
 - promoterun.yaml: create a taskrun that execute promote task
-
-## Build docker image with `service promote` command
-
-- clone this repository
-- run `docker build -t <image name> .` in repository root directory
-- run `docker tag <image name> <your docker hub id>/<image name>` to tag the image
-- run `docker login` to login to the docker hub
-- run `docker push <your docker hub id>/<image name>` to push the image to the docker hub
 
 ## Create Tekton resource
 
