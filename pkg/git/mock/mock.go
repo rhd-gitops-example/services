@@ -60,7 +60,7 @@ func (m *Repository) GetName() string {
 }
 
 func (m *Repository) GetCommitID() string {
-	m.commitID = "fakeCommitString"
+	m.commitID = "a1b2c3d"
 	return m.commitID
 }
 
