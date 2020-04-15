@@ -200,15 +200,15 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 
 func TestGenerateBranchWithSuccess(t *testing.T) {
 	repo := mock.New("/dev", "master")
-	GenerateBranchWithSuccess(t, repo)
+	generateBranchWithSuccess(t, repo)
 }
 
 func TestGenerateBranchForLocalSource(t *testing.T) {
 	source := NewLocal("/path/to/topLevel")
-	GenerateBranchForLocalWithSuccess(t, source)
+	generateBranchForLocalWithSuccess(t, source)
 }
 
-func GenerateBranchWithSuccess(t *testing.T, repo git.Repo) {
+func generateBranchWithSuccess(t *testing.T, repo git.Repo) {
 	branch := generateBranch(repo)
 	nameRegEx := "^([0-9A-Za-z]+)-([0-9a-z]{7})-([0-9A-Za-z]{5})$"
 	_, err := regexp.Match(nameRegEx, []byte(branch))
@@ -217,7 +217,7 @@ func GenerateBranchWithSuccess(t *testing.T, repo git.Repo) {
 	}
 }
 
-func GenerateBranchForLocalWithSuccess(t *testing.T, source git.Source) {
+func generateBranchForLocalWithSuccess(t *testing.T, source git.Source) {
 	branch := generateBranchForLocalSource(source)
 	nameRegEx := "^path-to-topLevel-local-dir-([0-9A-Za-z]{5})$"
 	_, err := regexp.Match(nameRegEx, []byte(branch))
