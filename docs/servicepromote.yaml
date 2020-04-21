@@ -37,9 +37,9 @@ spec:
     - name: gitconfig
       mountPath: /root
     script: |
-      #!/bin/sh
+      #!/bin/sh -x
       cp /root/gitconfig $HOME/.gitconfig
-      services promote --from $(params.from) --to $(params.to) --service $(params.service)
+      services promote --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $(</workspace/repo/.git-commit)"
     env:
     - name: GITHUB_TOKEN
       valueFrom:
