@@ -72,12 +72,26 @@ func makePromoteCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag(msgFlag, cmd.Flags().Lookup(msgFlag)))
 
+	cmd.Flags().String(
+		repoTypeFlag,
+		"github",
+		"the type of repository: github, gitlab or ghe",
+	)
+	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
+
 	cmd.Flags().Bool(
 		debugFlag,
 		false,
 		"additional debug logging output",
 	)
 	logIfError(viper.BindPFlag(debugFlag, cmd.Flags().Lookup(debugFlag)))
+
+	cmd.Flags().Bool(
+		insecureSkipVerifyFlag,
+		false,
+		"Insecure skip verify TLS certificate",
+	)
+	logIfError(viper.BindPFlag(insecureSkipVerifyFlag, cmd.Flags().Lookup(insecureSkipVerifyFlag)))
 
 	cmd.Flags().Bool(
 		keepCacheFlag,
@@ -98,7 +112,9 @@ func promoteAction(c *cobra.Command, args []string) error {
 	fromRepo := viper.GetString(fromFlag)
 	toRepo := viper.GetString(toFlag)
 	service := viper.GetString(serviceFlag)
+	repoType := viper.GetString(repoTypeFlag)
 	newBranchName := viper.GetString(branchNameFlag)
+	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
 	debug := viper.GetBool(debugFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
 	msg := viper.GetString(msgFlag)
@@ -112,7 +128,7 @@ func promoteAction(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author, avancement.WithDebug(debug)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
+	return avancement.New(cacheDir, author, avancement.WithDebug(debug), avancement.WithInsecureSkipVerify(insecureSkipVerify), avancement.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
 }
 
 func newAuthor() (*git.Author, error) {

@@ -13,7 +13,6 @@ import (
 
 	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/rhd-gitops-example/services/pkg/local"
-	"github.com/rhd-gitops-example/services/pkg/util"
 
 	"github.com/google/uuid"
 )
@@ -24,11 +23,13 @@ type ServiceManager struct {
 	clientFactory scmClientFactory
 	repoFactory   repoFactory
 	localFactory  localFactory
+	tlsVerify     bool
+	repoType      string
 	debug         bool
 }
 
-type scmClientFactory func(token string) *scm.Client
-type repoFactory func(url, localPath string, debug bool) (git.Repo, error)
+type scmClientFactory func(token, toURL, repoType string, tlsVerify bool) *scm.Client
+type repoFactory func(url, localPath string, tlsVerify, debug bool) (git.Repo, error)
 type localFactory func(localPath string, debug bool) git.Source
 type serviceOpt func(*ServiceManager)
 
@@ -40,9 +41,9 @@ func New(cacheDir string, author *git.Author, opts ...serviceOpt) *ServiceManage
 	sm := &ServiceManager{
 		cacheDir:      cacheDir,
 		author:        author,
-		clientFactory: git.CreateGitHubClient,
-		repoFactory: func(url, localPath string, debug bool) (git.Repo, error) {
-			r, err := git.NewRepository(url, localPath, debug)
+		clientFactory: git.CreateClient,
+		repoFactory: func(url, localPath string, tlsVerify, debug bool) (git.Repo, error) {
+			r, err := git.NewRepository(url, localPath, tlsVerify, debug)
 			return git.Repo(r), err
 		},
 		localFactory: func(localPath string, debug bool) git.Source {
@@ -61,6 +62,22 @@ func New(cacheDir string, author *git.Author, opts ...serviceOpt) *ServiceManage
 func WithDebug(f bool) serviceOpt {
 	return func(sm *ServiceManager) {
 		sm.debug = f
+	}
+}
+
+// WithTlsVerify is a service option that configures the ServiceManager for
+// TLS verify option.
+func WithInsecureSkipVerify(f bool) serviceOpt {
+	return func(sm *ServiceManager) {
+		sm.tlsVerify = !f
+	}
+}
+
+// WithRepType is a service option that configures the ServiceManager for
+// repository type option.  Supported values are "github", "gitlab, and "ghe"
+func WithRepoType(f string) serviceOpt {
+	return func(sm *ServiceManager) {
+		sm.repoType = strings.ToLower(f)
 	}
 }
 
@@ -150,7 +167,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	}
 
 	ctx := context.Background()
-	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, commitMsg, s.clientFactory(s.author.Token), isLocal)
+	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, commitMsg, s.clientFactory(s.author.Token, toURL, s.repoType, s.tlsVerify), isLocal)
 	if err != nil {
 		message := fmt.Sprintf("failed to create a pull-request for branch %s, error: %s", newBranchName, err)
 		return git.GitError(message, toURL)
@@ -192,7 +209,7 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo, err := s.repoFactory(repoURL, path.Join(s.cacheDir, encode(repoURL, branch)), s.debug)
+	repo, err := s.repoFactory(repoURL, path.Join(s.cacheDir, encode(repoURL, branch)), s.tlsVerify, s.debug)
 	if err != nil {
 		message := fmt.Sprintf("failed to clone repository, error is: %s", err.Error())
 		return nil, git.GitError(message, repoURL)
@@ -210,14 +227,10 @@ func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commi
 		// TODO: improve this error message
 		return nil, err
 	}
-	user, repo, err := util.ExtractUserAndRepo(toURL)
-	if err != nil {
-		// TODO: improve this error message
-		return nil, err
-	}
-	// TODO: come up with a better way of generating the repository URL (this
-	// only works for GitHub)
-	pr, _, err := client.PullRequests.Create(ctx, fmt.Sprintf("%s/%s", user, repo), prInput)
+
+	u, _ := url.Parse(toURL)
+	// take out ".git" at the end
+	pr, _, err := client.PullRequests.Create(ctx, u.Path[1:len(u.Path)-4], prInput)
 	return pr, err
 }
 
