@@ -28,7 +28,7 @@ spec:
     image: docker
     script: |
       #!/bin/sh
-      cp -R git-source/* repo
+      cp -R git-source/. repo
       docker build -f $(inputs.params.pathToDockerFile) -t $(outputs.resources.builtImage.url) $(inputs.params.pathToContext)
     volumeMounts:
     - name: docker-socket
@@ -47,13 +47,6 @@ spec:
     script: |
       #!/bin/sh
       sed -i -e "s#\$IMAGE#\$(outputs.resources.builtImage.url):\$(inputs.params.commitId)#" $(inputs.params.pathToContext)/config/deploy.yaml
-  - name: grab-git-commit
-    image: quay.io/redhat-developer/gitops-cli
-    imagePullPolicy: Always
-    script: |
-      #!/usr/bin/env bash
-      cd git-source
-      git rev-parse --short HEAD | tee /workspace/repo/.git-commit
   volumes:
     - name: docker-socket
       hostPath:

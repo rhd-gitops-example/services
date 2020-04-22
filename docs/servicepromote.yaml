@@ -39,7 +39,9 @@ spec:
     script: |
       #!/bin/sh -x
       cp /root/gitconfig $HOME/.gitconfig
-      services promote --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $(</workspace/repo/.git-commit)"
+      cd $(params.from)
+      gitCommit=$(git rev-parse --short HEAD)
+      services promote --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
     env:
     - name: GITHUB_TOKEN
       valueFrom:
