@@ -28,7 +28,7 @@ spec:
     image: docker
     script: |
       #!/bin/sh
-      cp -R git-source/* repo
+      cp -R git-source/. repo
       docker build -f $(inputs.params.pathToDockerFile) -t $(outputs.resources.builtImage.url) $(inputs.params.pathToContext)
     volumeMounts:
     - name: docker-socket
