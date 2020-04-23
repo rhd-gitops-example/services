@@ -49,7 +49,7 @@ func presetRequiredFlags(cmd *cobra.Command) {
 	logIfError(viper.BindPFlags(cmd.Flags()))
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if viper.IsSet(f.Name) && viper.GetString(f.Name) != "" {
-			cmd.Flags().Set(f.Name, viper.GetString(f.Name))
+			logIfError(cmd.Flags().Set(f.Name, viper.GetString(f.Name)))
 		}
 	})
 }
