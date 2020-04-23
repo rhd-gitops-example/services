@@ -6,9 +6,6 @@ on:
 - name: Deploy Release
   stage: deploy
   os: linux
-  script:
-    - make VERSION=${TRAVIS_TAG}  package
-    - make deploy
 
 name: Create Release
 
