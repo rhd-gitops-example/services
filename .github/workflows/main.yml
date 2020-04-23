@@ -9,14 +9,6 @@ on:
   script:
     - make VERSION=${TRAVIS_TAG}  package
     - make deploy
-  deploy:
-    provider: releases
-    api_key: $GH_TOKEN
-    file_glob: true
-    file: services*
-    skip_cleanup: true
-    on:
-      tags: true
 
 name: Create Release
 
