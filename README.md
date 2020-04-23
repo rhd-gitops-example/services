@@ -77,4 +77,4 @@ At a high level the services command currently:
 
 ## Release process
 
-When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Windows, Linux, and Mac automatically.
+When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Linux, and Mac automatically.
