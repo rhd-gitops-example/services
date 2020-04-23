@@ -69,8 +69,12 @@ At a high level the services command currently:
 - pushes the cloned target
 - creates a PR from the new branch in the target to master in the target
 
-Important Notes:
+## Important notes:
 
 - We need to remove the local cache between requests. See https://github.com/rhd-gitops-example/services/issues/20. Until then, add `rm -rf ~/.promotion/cache; ` before subsequent requests.
 - New pull requests need new branches (i.e you cannot run the same command twice). Add `--branch [unique branch name]` before submitting further promotion PRs. See https://github.com/rhd-gitops-example/services/issues/21.
 - See https://github.com/rhd-gitops-example/services/issues/19 for an issue related to problems 'promoting' config from a source repo into a gitops repo. 
+
+## Release process
+
+When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Windows, Linux, and Mac automatically.
