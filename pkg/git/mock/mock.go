@@ -13,12 +13,10 @@ import (
 type Repository struct {
 	currentBranch string
 	knownBranches []string
-	cloned        bool
 
 	files     []string
 	localPath string
 
-	cloneErr    error
 	checkoutErr error
 
 	branchesCreated []string
@@ -72,12 +70,6 @@ func (m *Repository) CheckoutAndCreate(branch string) error {
 	m.branchesCreated = append(m.branchesCreated, key(m.currentBranch, branch))
 	m.currentBranch = branch
 	return m.checkoutErr
-}
-
-// Clone fulfils the git.Repo interface.
-func (m *Repository) Clone() error {
-	m.cloned = true
-	return m.cloneErr
 }
 
 // StageFiles fulfils the git.Repo interface.

@@ -16,58 +16,50 @@ import (
 
 var _ Repo = (*Repository)(nil)
 
+type loggerFunc func(fmt string, v ...interface{})
+
 type Repository struct {
 	LocalPath string
 	RepoURL   string
 	repoName  string
-	tlsVerify bool
+	verifyTLS bool
 	debug     bool
-	logger    func(fmt string, v ...interface{})
+	logger    loggerFunc
 }
 
 // NewRepository creates and returns a local cache of an upstream repository.
 //
 // The repoURL should be of the form https://github.com/myorg/myrepo.
 // The path should be a local directory where the contents are cloned to.
-func NewRepository(repoURL, localPath string, tlsVerify bool, debug bool) (*Repository, error) {
-	name, err := repoName(repoURL)
+func NewRemoteRepository(repoURL, cacheDir string, verifyTLS bool, debug bool) (*Repository, error) {
+	localPath, err := cloneRepo(cacheDir, repoURL, verifyTLS, debug, log.Printf)
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, tlsVerify: tlsVerify, logger: log.Printf, debug: debug}, nil
+	return &Repository{LocalPath: localPath, RepoURL: repoURL, logger: log.Printf, debug: debug, verifyTLS: verifyTLS}, nil
 }
 
 func (g *Repository) repoPath(extras ...string) string {
-	fullPath := append([]string{g.LocalPath, g.repoName}, extras...)
+	fullPath := append([]string{g.LocalPath}, extras...)
 	return path.Join(fullPath...)
 }
 
-func (r *Repository) Clone() error {
-	err := os.MkdirAll(r.LocalPath, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating the cache dir %s: %w", r.LocalPath, err)
-	}
-	// Intentionally omit output as it can contain an access token
-	_, err = r.execGit(r.LocalPath, nil, "clone", r.RepoURL)
-	return err
-}
-
 func (r *Repository) Checkout(branch string) error {
-	_, err := r.execGit(r.repoPath(), nil, "checkout", branch)
+	_, err := execGit(r.repoPath(), nil, r.verifyTLS, r.debug, r.logger, "checkout", branch)
 	return err
 }
 
 func (r *Repository) CheckoutAndCreate(branch string) error {
-	_, err := r.execGit(r.repoPath(), nil, "checkout", "-b", branch)
+	_, err := execGit(r.repoPath(), nil, r.verifyTLS, r.debug, r.logger, "checkout", "-b", branch)
 	return err
 }
 
 func (r *Repository) GetName() string {
-	return r.repoName
+	return ""
 }
 
-func (r *Repository) GetCommitID() string {
-	commitID, _ := r.execGit(r.repoPath(), nil, "rev-parse", "--short", "HEAD")
+func (r *Repository) CommitID() string {
+	commitID, _ := execGit(r.repoPath(), nil, r.verifyTLS, r.debug, r.logger, "rev-parse", "--short", "HEAD")
 	return string(commitID)
 }
 
@@ -107,41 +99,20 @@ func (r *Repository) CopyFile(src, dst string) error {
 }
 
 func (r *Repository) StageFiles(filenames ...string) error {
-	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
+	_, err := execGit(r.repoPath(), nil, r.verifyTLS, r.debug, r.logger, append([]string{"add"}, filenames...)...)
 	return err
 }
 
 func (r *Repository) Commit(msg string, author *Author) error {
 	args := []string{"commit", "-m", msg}
-	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)
+	_, err := execGit(r.repoPath(), envFromAuthor(author), r.verifyTLS, r.debug, r.logger, args...)
 	return err
 }
 
 func (r *Repository) Push(branchName string) error {
 	args := []string{"push", "origin", branchName}
-	_, err := r.execGit(r.repoPath(), nil, args...)
+	_, err := execGit(r.repoPath(), nil, r.verifyTLS, r.debug, r.logger, args...)
 	return err
-}
-
-func (r *Repository) execGit(workingDir string, env []string, args ...string) ([]byte, error) {
-	cmd := exec.Command("git", args...)
-	if !r.tlsVerify {
-		env = append(env, "GIT_SSL_NO_VERIFY=true")
-	}
-	if env != nil {
-		cmd.Env = append(os.Environ(), env...)
-	}
-	cmd.Dir = workingDir
-	var b bytes.Buffer
-	cmd.Stdout = &b
-	cmd.Stderr = &b
-	err := cmd.Run()
-	out := b.Bytes()
-	// TODO: more sophisticated logging.
-	if err != nil && r.debug {
-		r.logger("DEBUG: %s\n", out)
-	}
-	return out, err
 }
 
 // TODO: this probably needs specialisation for GitLab URLs.
@@ -178,4 +149,39 @@ func (r *Repository) DeleteCache() error {
 		return fmt.Errorf("failed deleting `%s` : %w", r.LocalPath, err)
 	}
 	return nil
+}
+
+func cloneRepo(localPath, repoURL string, verifyTLS, debug bool, logger loggerFunc) (string, error) {
+	name, err := repoName(repoURL)
+	if err != nil {
+		return "", err
+	}
+	err = os.MkdirAll(localPath, 0755)
+	if err != nil {
+		return "", fmt.Errorf("error creating the cache dir %s: %w", localPath, err)
+	}
+	// Intentionally omit output as it can contain an access token.
+	_, err = execGit(localPath, nil, verifyTLS, debug, logger, "clone", repoURL)
+	return filepath.Join(localPath, name), err
+}
+
+func execGit(workingDir string, env []string, verifyTLS, debug bool, logger loggerFunc, args ...string) ([]byte, error) {
+	if verifyTLS {
+		env = append(env, "GIT_SSL_NO_VERIFY=true")
+	}
+	cmd := exec.Command("git", args...)
+	if env != nil {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	cmd.Dir = workingDir
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+	err := cmd.Run()
+	out := b.Bytes()
+	// TODO: more sophisticated logging.
+	if err != nil && debug {
+		logger("DEBUG: %s\n", out)
+	}
+	return out, err
 }

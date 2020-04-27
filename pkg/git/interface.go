@@ -21,10 +21,9 @@ type Source interface {
 type Repo interface {
 	Destination
 	Source
-	Clone() error
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
-	GetCommitID() string
+	CommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error
 	Push(branch string) error

@@ -3,9 +3,11 @@ package git
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -15,7 +17,7 @@ import (
 	"github.com/rhd-gitops-example/services/test"
 )
 
-const testRepository = "https://github.com/mnuttall/staging.git"
+const testRepository = "https://github.com/rhd-gitops-example/gitops-example-staging.git"
 
 func TestRepoName(t *testing.T) {
 	nameTests := []struct {
@@ -23,7 +25,7 @@ func TestRepoName(t *testing.T) {
 		wantName string
 		wantErr  string
 	}{
-		{testRepository, "staging", ""},
+		{testRepository, "gitops-example-staging", ""},
 		{"https://github.com/mnuttall", "", "could not identify repository name: https://github.com/mnuttall"},
 	}
 
@@ -44,15 +46,13 @@ func TestRepoName(t *testing.T) {
 func TestCloneCreatesDirectory(t *testing.T) {
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
-	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), true, false)
-	assertNoError(t, err)
-	err = r.Clone()
+	_, err := NewRemoteRepository(testRepository, filepath.Join(tempDir, "path"), true, false)
 	assertNoError(t, err)
 
-	contents, err := ioutil.ReadFile(path.Join(tempDir, "path", "staging/services/service-a/base/config/deployment.txt"))
+	contents, err := ioutil.ReadFile(path.Join(tempDir, "path", "gitops-example-staging/services/service-a/base/config/kustomization.yaml"))
 	assertNoError(t, err)
 
-	want := "This is the staging version of this file.\n"
+	want := "---\nresources: \n  - 300-deployment.yaml\n  - 310-service.yaml"
 	if diff := cmp.Diff(want, string(contents)); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
 	}
@@ -62,9 +62,9 @@ func TestClone(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()
 
-	contents, err := ioutil.ReadFile(path.Join(r.LocalPath, "staging/services/service-a/base/config/deployment.txt"))
+	contents, err := ioutil.ReadFile(path.Join(r.LocalPath, "gitops-example-staging/services/service-a/base/config/kustomization.yaml"))
 	assertNoError(t, err)
-	want := "This is the staging version of this file.\n"
+	want := "---\nresources: \n  - 300-deployment.yaml\n  - 310-service.yaml"
 	if diff := cmp.Diff(want, string(contents)); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
 	}
@@ -84,12 +84,12 @@ func TestWalk(t *testing.T) {
 	want := []string{
 		"service-a/base/config/300-deployment.yaml",
 		"service-a/base/config/310-service.yaml",
-		"service-a/base/config/deployment.txt",
 		"service-a/base/config/kustomization.yaml",
 		"service-a/base/kustomization.yaml",
+		"service-a/kustomization.yaml",
+		"service-a/overlays/dev-deployment.yaml",
+		"service-a/overlays/dev-service.yaml",
 		"service-a/overlays/kustomization.yaml",
-		"service-a/overlays/staging-deployment.yaml",
-		"service-a/overlays/staging-service.yaml",
 	}
 	if diff := cmp.Diff(want, visited); diff != "" {
 		t.Fatalf("failed to read file: %s", diff)
@@ -184,7 +184,7 @@ func TestStageFiles(t *testing.T) {
 	err = r.StageFiles("services/service-a/new-file.txt")
 	assertNoError(t, err)
 
-	out := assertExecGit(t, r, r.repoPath("services/service-a"), "status", "--porcelain")
+	out := assertExecGit(t, r.repoPath("services/service-a"), "status", "--porcelain")
 	want := "A  services/service-a/new-file.txt\n"
 	if diff := cmp.Diff(want, string(out)); diff != "" {
 		t.Fatalf("file status not modified: %s", diff)
@@ -208,7 +208,7 @@ func TestCommit(t *testing.T) {
 	err = r.Commit("this is a test commit", &Author{Name: "Test User", Email: "testing@example.com"})
 	assertNoError(t, err)
 
-	out := strings.Split(string(assertExecGit(t, r, r.repoPath("services/service-a"), "log", "-n", "1")), "\n")
+	out := strings.Split(string(assertExecGit(t, r.repoPath("services/service-a"), "log", "-n", "1")), "\n")
 	want := []string{"Author: Test User <testing@example.com>", "    this is a test commit"}
 	if diff := cmp.Diff(want, out, cmpopts.IgnoreSliceElements(func(s string) bool {
 		return strings.HasPrefix(s, "commit") || strings.HasPrefix(s, "Date:") || s == ""
@@ -221,11 +221,11 @@ func TestExecGit(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	r.debug = true
 	captured := ""
-	r.logger = func(f string, v ...interface{}) {
+	logger := func(f string, v ...interface{}) {
 		captured = fmt.Sprintf(f, v...)
 	}
 	defer cleanup()
-	_, err := r.execGit(r.repoPath(), nil, "unknown")
+	_, err := execGit(r.repoPath(), nil, true, logger, "unknown")
 	test.AssertErrorMatch(t, "exit status 1", err)
 
 	want := "DEBUG: git: 'unknown' is not a git command. See 'git --help'."
@@ -256,7 +256,7 @@ func TestPush(t *testing.T) {
 func TestDebugEnabled(t *testing.T) {
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
-	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), false, true)
+	r, err := NewRemoteRepository(testRepository, path.Join(tempDir, "path"), false, true)
 	assertNoError(t, err)
 	if !r.debug {
 		t.Fatalf("Debug not set to true")
@@ -265,9 +265,7 @@ func TestDebugEnabled(t *testing.T) {
 
 func cloneTestRepository(t *testing.T) (*Repository, func()) {
 	tempDir, cleanup := makeTempDir(t)
-	r, err := NewRepository(authenticatedURL(t), tempDir, false, false)
-	assertNoError(t, err)
-	err = r.Clone()
+	r, err := NewRemoteRepository(authenticatedURL(t), tempDir, false, false)
 	assertNoError(t, err)
 	return r, cleanup
 }
@@ -292,9 +290,9 @@ func makeTempDir(t *testing.T) (string, func()) {
 	}
 }
 
-func assertExecGit(t *testing.T, r *Repository, gitPath string, args ...string) []byte {
+func assertExecGit(t *testing.T, gitPath string, args ...string) []byte {
 	t.Helper()
-	out, err := r.execGit(gitPath, nil, args...)
+	out, err := execGit(gitPath, nil, false, log.Printf, args...)
 	if err != nil {
 		t.Fatalf("assertExecGit failed: %s (%s)", err, out)
 	}
