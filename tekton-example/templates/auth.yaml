@@ -6,8 +6,17 @@ metadata:
     tekton.dev/git-0: https://github.com
 type: kubernetes.io/basic-auth
 stringData:
-  username: <github user name>
-  password: <github personal access token>
+  username: REPLACE_ME.GITHUB_USERNAME
+  password: REPLACE_ME.GITHUB_ACCESS_TOKEN
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: promote-secret
+stringData:
+  token: REPLACE_ME.GITHUB_ACCESS_TOKEN
 
 ---
 
@@ -19,8 +28,8 @@ metadata:
     tekton.dev/docker-0: https://index.docker.io/v1/
 type: kubernetes.io/basic-auth
 stringData:
-  username: <docker hub user id>
-  password: <docker hub password>
+  username: REPLACE_ME.DOCKER_ID
+  password: REPLACE_ME.DOCKER_PASSWORD
 
 ---
 

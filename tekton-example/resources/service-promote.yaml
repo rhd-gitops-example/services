@@ -21,7 +21,7 @@ spec:
     description: service name to be promoted
   - name: github-config
     type: string
-    description: configmap name of the gitconfig file that has user name and e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=$HOME/.gitconfig -n <namespace>"
+    description: configmap name of the gitconfig file that has user name and e-mail
   volumes:
   - name: gitconfig
     configMap:

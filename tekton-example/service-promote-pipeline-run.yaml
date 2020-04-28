@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: service-promote-pipelinerun-
+  generateName: service-promote-pipeline-run-
 spec:
   resources:
   - name: git-source
@@ -14,11 +14,11 @@ spec:
   - name: commitId
     value: v1
   - name: github-secret
-    value: promotesecret
+    value: promote-secret
   - name: github-config
-    value: promoteconfigmap
+    value: promote-configmap
   - name: to
-    value: "https://github.com/<your github org>/<your github repo>.git"
+    value: "https://github.com/REPLACE_ME.GITHUB_USERNAME/REPLACE_ME.GITHUB_REPO.git"
   - name: service
     value: service-a
   workspaces:
