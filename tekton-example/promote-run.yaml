@@ -1,0 +1,18 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: promote-run-
+spec:
+  params:
+  - name: github-secret
+    value: promote-secret
+  - name: github-config
+    value: promote-configmap
+  - name: from
+    value: "https://github.com/REPLACE_ME.OWNER/REPLACE_ME.GITHUB_TESTING_REPO"
+  - name: to
+    value: "https://github.com/REPLACE_ME.OWNER/REPLACE_ME.GITHUB_PROD_REPO"
+  - name: service
+    value: service-a
+  taskRef:
+    name: promote

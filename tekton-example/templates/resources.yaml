@@ -7,8 +7,7 @@ spec:
   - name: revision
     value: master
   - name: url
-    #value: https://github.com/akihikokuroda/promote-demo.git
-    value: https://github.com/<github org>/<github repo>.git
+    value: https://github.com/REPLACE_ME.GITHUB_ORG/REPLACE_ME.GITHUB_REPO.git
   type: git
 
 ---
@@ -20,8 +19,7 @@ metadata:
 spec:
   params:
   - name: url
-    #value: akihikokuroda/app-image
-    value: <docker hub image name>
+    value: REPLACE_ME.DOCKER_IMAGE_NAME
   type: image
 
 ---

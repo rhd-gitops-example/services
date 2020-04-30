@@ -6,7 +6,7 @@ spec:
   params:
   - name: github-secret
     type: string
-    description: seret name of the github that has the access token. The key name is token.
+    description: secret name of the github that has the access token. The key name is token.
   - name: from
     type: string
     description: github repository url to be promoted from
@@ -18,7 +18,7 @@ spec:
     description: service name to be promoted
   - name: github-config
     type: string
-    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=gitconfig -n promote"
+    description: configmap name of the gitconfig file that has user name, user e-mail
   volumes:
   - name: gitconfig
     configMap:
@@ -28,8 +28,7 @@ spec:
           path: gitconfig
   steps:
   - name: promote
-    #image: akihikokuroda/promote
-    image: <image name>
+    image: quay.io/redhat-developer/gitops-cli
     imagePullPolicy: Always
     volumeMounts:
     - name: gitconfig
