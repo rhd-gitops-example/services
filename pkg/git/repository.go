@@ -20,6 +20,7 @@ type Repository struct {
 	LocalPath string
 	RepoURL   string
 	repoName  string
+	tlsVerify bool
 	debug     bool
 	logger    func(fmt string, v ...interface{})
 }
@@ -28,12 +29,12 @@ type Repository struct {
 //
 // The repoURL should be of the form https://github.com/myorg/myrepo.
 // The path should be a local directory where the contents are cloned to.
-func NewRepository(repoURL, localPath string, debug bool) (*Repository, error) {
+func NewRepository(repoURL, localPath string, tlsVerify bool, debug bool) (*Repository, error) {
 	name, err := repoName(repoURL)
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, logger: log.Printf, debug: debug}, nil
+	return &Repository{LocalPath: localPath, RepoURL: repoURL, repoName: name, tlsVerify: tlsVerify, logger: log.Printf, debug: debug}, nil
 }
 
 func (g *Repository) repoPath(extras ...string) string {
@@ -124,6 +125,9 @@ func (r *Repository) Push(branchName string) error {
 
 func (r *Repository) execGit(workingDir string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.Command("git", args...)
+	if !r.tlsVerify {
+		env = append(env, "GIT_SSL_NO_VERIFY=true")
+	}
 	if env != nil {
 		cmd.Env = append(os.Environ(), env...)
 	}

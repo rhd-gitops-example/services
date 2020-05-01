@@ -13,7 +13,7 @@ import (
 func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody string) (*scm.PullRequestInput, error) {
 	var title string
 
-	fromUser, toRepo, err := util.ExtractUserAndRepo(toURL)
+	_, toRepo, err := util.ExtractUserAndRepo(toURL)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody str
 
 	return &scm.PullRequestInput{
 		Title: title,
-		Head:  fmt.Sprintf("%s:%s", fromUser, branchName),
+		Head:  branchName,
 		Base:  "master",
 		Body:  prBody,
 	}, nil

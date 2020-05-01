@@ -22,19 +22,19 @@ const (
 	staging = "https://example.com/testing/staging-env"
 )
 
-func TestPromoteWithSuccessKeepCacheTrue(t *testing.T) {
-	promoteWithSuccess(t, true, "")
+func TestPromoteWithSuccessKeepCacheTrueWithGHE(t *testing.T) {
+	promoteWithSuccess(t, true, "ghe", true, "")
 }
 
-func TestPromoteWithSuccessKeepCacheFalse(t *testing.T) {
-	promoteWithSuccess(t, false, "")
+func TestPromoteWithSuccessKeepCacheFalseWithGitHub(t *testing.T) {
+	promoteWithSuccess(t, false, "github", false, "")
 }
 
 func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 	promoteLocalWithSuccess(t, true, "custom commit message here")
 }
 
-func promoteWithSuccess(t *testing.T, keepCache bool, msg string) {
+func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
@@ -43,11 +43,22 @@ func promoteWithSuccess(t *testing.T, keepCache bool, msg string) {
 		mustAddCredentials(t, staging, author): stagingRepo,
 	}
 	sm := New("tmp", author)
-	sm.clientFactory = func(s string) *scm.Client {
+	sm.repoType = repoType
+	sm.tlsVerify = tlsVerify
+	sm.clientFactory = func(s, ty, r  string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
+		if r != repoType {
+			t.Fatalf("repoType doesn't match %s != %s\n", r, repoType)
+		}
+		if v != tlsVerify {
+			t.Fatalf("tlsVerify doesn't match in ClientFactory %v != %v\n", v, tlsVerify)
+		}
 		return client
 	}
-	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
+		if v != tlsVerify {
+			t.Fatalf("tlsVerify doesn't match in RepoFactory %v != %v\n", v, tlsVerify)
+		}
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
@@ -96,11 +107,11 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	devRepo := NewLocal("/dev")
 
 	sm := New("tmp", author)
-	sm.clientFactory = func(s string) *scm.Client {
+	sm.clientFactory = func(s, t, r  string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
 		return client
 	}
-	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+	sm.repoFactory = func(url, _ string, _ bool, _ bool) (git.Repo, error) {
 		return git.Repo(stagingRepo), nil
 	}
 	sm.localFactory = func(path string, _ bool) git.Source {
@@ -173,11 +184,11 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 		mustAddCredentials(t, staging, author): stagingRepo,
 	}
 	sm := New("tmp", author)
-	sm.clientFactory = func(s string) *scm.Client {
+	sm.clientFactory = func(s, t, r  string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
 		return client
 	}
-	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+	sm.repoFactory = func(url, _ string, _ bool, _ bool) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
@@ -287,13 +298,13 @@ func TestRepositoryCloneErrorOmitsToken(t *testing.T) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	client, _ := fakescm.NewDefault()
-	fakeClientFactory := func(s string) *scm.Client {
+	fakeClientFactory := func(s, t, r  string, v bool)  *scm.Client {
 		return client
 	}
 	sm := New("tmp", author)
 	sm.clientFactory = fakeClientFactory
 
-	sm.repoFactory = func(url, _ string, _ bool) (git.Repo, error) {
+	sm.repoFactory = func(url, _ string, _ bool, _ bool) (git.Repo, error) {
 		// This actually causes the error and results in trying to create a repository
 		// which can surface the token
 		errorMessage := fmt.Errorf("failed to clone repository %s: exit status 128", dev)

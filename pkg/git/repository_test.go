@@ -44,7 +44,7 @@ func TestRepoName(t *testing.T) {
 func TestCloneCreatesDirectory(t *testing.T) {
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
-	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), false)
+	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), true, false)
 	assertNoError(t, err)
 	err = r.Clone()
 	assertNoError(t, err)
@@ -256,7 +256,7 @@ func TestPush(t *testing.T) {
 func TestDebugEnabled(t *testing.T) {
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
-	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), true)
+	r, err := NewRepository(testRepository, path.Join(tempDir, "path"), false, true)
 	assertNoError(t, err)
 	if !r.debug {
 		t.Fatalf("Debug not set to true")
@@ -265,7 +265,7 @@ func TestDebugEnabled(t *testing.T) {
 
 func cloneTestRepository(t *testing.T) (*Repository, func()) {
 	tempDir, cleanup := makeTempDir(t)
-	r, err := NewRepository(authenticatedURL(t), tempDir, false)
+	r, err := NewRepository(authenticatedURL(t), tempDir, false, false)
 	assertNoError(t, err)
 	err = r.Clone()
 	assertNoError(t, err)
