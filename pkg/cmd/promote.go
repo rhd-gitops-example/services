@@ -79,6 +79,13 @@ func makePromoteCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
 
+	cmd.Flags().String(
+		envFlag,
+		"",
+		"the environment to promote from: e.g. dev, staging or prod",
+	)
+	logIfError(viper.BindPFlag(envFlag, cmd.Flags().Lookup(envFlag)))
+
 	cmd.Flags().Bool(
 		debugFlag,
 		false,
@@ -118,6 +125,7 @@ func promoteAction(c *cobra.Command, args []string) error {
 	debug := viper.GetBool(debugFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
 	msg := viper.GetString(msgFlag)
+	env := viper.GetString(envFlag)
 
 	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
 	if err != nil {
@@ -128,7 +136,7 @@ func promoteAction(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author, avancement.WithDebug(debug), avancement.WithInsecureSkipVerify(insecureSkipVerify), avancement.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
+	return avancement.New(cacheDir, author, avancement.WithDebug(debug), avancement.WithInsecureSkipVerify(insecureSkipVerify), avancement.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, env, keepCache)
 }
 
 func newAuthor() (*git.Author, error) {

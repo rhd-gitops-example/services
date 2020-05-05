@@ -26,6 +26,7 @@ type ServiceManager struct {
 	tlsVerify     bool
 	repoType      string
 	debug         bool
+	environment   string
 }
 
 type scmClientFactory func(token, toURL, repoType string, tlsVerify bool) *scm.Client
@@ -89,7 +90,7 @@ const fromBranch = "master"
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, message string, keepCache bool) error {
+func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, message, env string, keepCache bool) error {
 	var source, destination git.Repo
 	var reposToDelete []git.Repo
 
@@ -107,12 +108,19 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	var localSource git.Source
 	var errorSource error
 	isLocal := fromLocalRepo(fromURL)
+
 	if isLocal {
+		if env != "" {
+			fmt.Printf("[local] an env was provided, todo use it, value is: %s\n", env)
+		}
 		localSource = s.localFactory(fromURL, s.debug)
 		if newBranchName == "" {
 			newBranchName = generateBranchForLocalSource(localSource)
 		}
 	} else {
+		if env != "" {
+			fmt.Printf("[remote] an env was provided, todo use it, value is: %s\n", env)
+		}
 		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
 		if errorSource != nil {
 			return git.GitError("error checking out source repository from Git", fromURL)
