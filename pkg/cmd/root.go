@@ -67,7 +67,6 @@ func Execute() {
 	logIfError(cobra.MarkFlagRequired(rootCmd.PersistentFlags(), githubTokenFlag))
 	logIfError(viper.BindPFlag(githubTokenFlag, rootCmd.PersistentFlags().Lookup(githubTokenFlag)))
 	rootCmd.AddCommand(makePromoteCmd())
-
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}

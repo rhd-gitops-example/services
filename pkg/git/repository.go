@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -97,6 +98,27 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 	return err
 }
 
+// Returns the directory names of those under a certain path (excluding sub-dirs)
+func (r *Repository) DirectoriesUnderPath(path string) []string {
+	filename := r.repoPath(path)
+	files, _ := ioutil.ReadDir(filename)
+	var dirNames []string
+	for _, file := range files {
+		dirNames = append(dirNames, file.Name())
+	}
+	return dirNames
+}
+
+// Todo test
+func (r *Repository) FileExists(path string) bool {
+	filename := r.repoPath(path)
+	_, err := os.Lstat(filename)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (r *Repository) CopyFile(src, dst string) error {
 	outputPath := r.repoPath(dst)
 	err := os.MkdirAll(path.Dir(outputPath), 0755)
@@ -106,17 +128,20 @@ func (r *Repository) CopyFile(src, dst string) error {
 	return fileCopy(src, outputPath)
 }
 
+// This does the git add command on file(s)
 func (r *Repository) StageFiles(filenames ...string) error {
 	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
 	return err
 }
 
+// Actually does the git commit -m with the msg & author
 func (r *Repository) Commit(msg string, author *Author) error {
 	args := []string{"commit", "-m", msg}
 	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)
 	return err
 }
 
+// Does a git push origin *branch name*
 func (r *Repository) Push(branchName string) error {
 	args := []string{"push", "origin", branchName}
 	_, err := r.execGit(r.repoPath(), nil, args...)

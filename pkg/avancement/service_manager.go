@@ -163,6 +163,22 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		}
 	}
 
+	foundSingularEnv := ""
+	if destination != nil {
+		// Todo optimise this, can probably do in the one function call
+		if destination.FileExists("environments") {
+			dirsUnderPath := destination.DirectoriesUnderPath("environments")
+			if len(dirsUnderPath) == 1 {
+				foundSingularEnv = dirsUnderPath[0]
+				// TODO impl/move/test
+				fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s", foundSingularEnv)
+				// Haven't gone down the --env flag usage yet, so use this
+			}
+		} else {
+			return fmt.Errorf("destination is somehow nil")
+		}
+	}
+
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
@@ -206,7 +222,7 @@ func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Re
 	}
 	err = repo.CheckoutAndCreate(branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to checkout branch %s: %w", branch, err)
+		return nil, fmt.Errorf("failed to checkout branch %s, error: %w", branch, err)
 	}
 	return repo, nil
 }

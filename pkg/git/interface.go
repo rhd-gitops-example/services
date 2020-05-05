@@ -24,6 +24,8 @@ type Repo interface {
 	Clone() error
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
+	DirectoriesUnderPath(path string) []string
+	FileExists(fileName string) bool
 	GetCommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error
