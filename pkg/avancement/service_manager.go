@@ -144,13 +144,14 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			if dirsUnderPath != nil {
 				if len(dirsUnderPath) == 1 {
 					foundSingularEnv = dirsUnderPath[0]
-					// TODO impl/move/test
-					fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s", foundSingularEnv)
-					// Haven't gone down the --env flag usage yet, so use this
-					// Todo copy to the env place, if there's just one, with that name being used
-					// If --env is specified then copy there instead
+					fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s\n", foundSingularEnv)
 				}
-				copied, err = local.CopyConfig(serviceName, localSource, destination)
+				overrideTargetFolder := ""
+				if foundSingularEnv != "" {
+					overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
+				}
+				// Todo hook up override target folder to accept --env option
+				copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
 				if err != nil {
 					return fmt.Errorf("failed to set up local repository: %w", err)
 				}
