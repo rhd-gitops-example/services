@@ -23,9 +23,17 @@ $ ./services promote --from https://github.com/organisation/first-environment.gi
 
 If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
 
---env can also be specified - for example, to promote from the `dev` environment you would specify `--env dev`.
 
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
+
+
+## Using environments 
+
+A `--env` option can be provided to the `promote` command. Doing so will result in the usual config files files being copied into a specified destination's repository's folder: `--env staging` would result in a pull request with the staged files being placed in the `environments/staging` folder for the GitOps repository. The directory is created and output is provided from the command indicating this, in the event you made a mistake.
+
+If no `--env` option is provided, but an `environments` folder does exist on the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `environments/<the only folder>` directory.
+
+Note that --env always takes precedent. 
 
 ## Testing
 

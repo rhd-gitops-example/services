@@ -148,15 +148,13 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			}
 
 			if env != "" {
-				fmt.Printf("User provided --env option has been specified, it is: %s\n", env)
 				overrideTargetFolder = fmt.Sprintf("environments/%s", env)
 			} else {
-				fmt.Print("No --env option set, looking for first directory under environments to promote into\n")
 				dirsUnderPath := destination.DirectoriesUnderPath("environments")
 				if dirsUnderPath != nil {
 					if len(dirsUnderPath) == 1 {
+						// Todo check this doesn;t include subdirs
 						foundSingularEnv := dirsUnderPath[0]
-						fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s\n", foundSingularEnv)
 						if foundSingularEnv != "" {
 							overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
 						}
