@@ -138,23 +138,36 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	var copied []string
 
 	if isLocal {
-		foundSingularEnv := ""
 		if destination != nil {
-			dirsUnderPath := destination.DirectoriesUnderPath("environments")
-			if dirsUnderPath != nil {
-				if len(dirsUnderPath) == 1 {
-					foundSingularEnv = dirsUnderPath[0]
-					fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s\n", foundSingularEnv)
+
+			environmentsFolderExists := destination.FileExists("environments")
+			overrideTargetFolder := ""
+
+			if !environmentsFolderExists {
+				return fmt.Errorf("no environments folder exists for destination repository to promote into")
+			}
+
+			if env != "" {
+				fmt.Printf("User provided --env option has been specified, it is: %s\n", env)
+				overrideTargetFolder = fmt.Sprintf("environments/%s", env)
+			} else {
+				fmt.Print("No --env option set, looking for first directory under environments to promote into\n")
+				dirsUnderPath := destination.DirectoriesUnderPath("environments")
+				if dirsUnderPath != nil {
+					if len(dirsUnderPath) == 1 {
+						foundSingularEnv := dirsUnderPath[0]
+						fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s\n", foundSingularEnv)
+						if foundSingularEnv != "" {
+							overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
+						}
+					} else {
+						return fmt.Errorf("multiple environment folders were found and no --env option was specified, failed to promote")
+					}
 				}
-				overrideTargetFolder := ""
-				if foundSingularEnv != "" {
-					overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
-				}
-				// Todo hook up override target folder to accept --env option
-				copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
-				if err != nil {
-					return fmt.Errorf("failed to set up local repository: %w", err)
-				}
+			}
+			copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
+			if err != nil {
+				return fmt.Errorf("failed to set up local repository: %w", err)
 			}
 		}
 	} else {

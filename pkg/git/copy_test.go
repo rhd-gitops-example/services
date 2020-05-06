@@ -96,6 +96,23 @@ func TestCopyServiceWithFailureCopying(t *testing.T) {
 	}
 }
 
+// Returns true only if filepath is environments or environments/staging
+// Same as FileExists
+func (d *mockDestination) DestFileExists(filepath string) bool {
+	if filepath == "environments" || filepath == "environments/staging" {
+		return true
+	}
+	return false
+}
+
+// Returns true only if filepath is environments or environments/staging
+func (d *mockDestination) FileExists(filepath string) bool {
+	if filepath == "environments" || filepath == "environments/staging" {
+		return true
+	}
+	return false
+}
+
 type mockSource struct {
 	files     []string
 	localPath string

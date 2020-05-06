@@ -7,6 +7,7 @@ import "io"
 type Destination interface {
 	CopyFile(src, dst string) error
 	WriteFile(src io.Reader, dst string) error
+	DestFileExists(filePath string) bool // Todo how can I reuse FileExists instead
 }
 
 // Source is implemented by values that can provide a list of files for reading

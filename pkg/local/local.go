@@ -27,14 +27,14 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, ove
 	err := source.Walk("", func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
 		destPath := pathForDestServiceConfig(serviceName, name)
-		fmt.Printf("destination path is: %s\n", destPath)
-		fmt.Printf("override target folder is: %s\n", overrideTargetFolder)
 		if overrideTargetFolder != "" {
 			destPath = fmt.Sprintf("%s/%s", overrideTargetFolder, destPath)
-			fmt.Printf("destination path is now: %s\n", destPath)
 		}
-		// TODO copy the config/ folder into the destination repository's
-		// environments/staging/services/promote-demo/base/config directory
+		if !dest.DestFileExists(overrideTargetFolder) {
+			// Log output if the destination folder doesn't yet exist - maybe they've typod
+			// E.g. they wanted to use --env prod but went with --prody. Instead of failing, say something
+			fmt.Printf("Note: the overridden --env directory to promote into (%s) does not yet exist and will be created", overrideTargetFolder)
+		}
 		err := dest.CopyFile(sourcePath, destPath)
 		if err == nil {
 			copied = append(copied, destPath)

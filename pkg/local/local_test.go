@@ -110,6 +110,23 @@ func (d *mockDestination) CopyFile(src, dst string) error {
 	return nil
 }
 
+// Returns true only if filepath is environments or environments/staging
+// Same as FileExists, forgive me
+func (d *mockDestination) DestFileExists(filepath string) bool {
+	if filepath == "environments" || filepath == "environments/staging" {
+		return true
+	}
+	return false
+}
+
+// Returns true only if filepath is environments or environments/staging
+func (d *mockDestination) FileExists(filepath string) bool {
+	if filepath == "environments" || filepath == "environments/staging" {
+		return true
+	}
+	return false
+}
+
 func (d *mockDestination) WriteFile(src io.Reader, dst string) error {
 	return errors.New("not implemented just now")
 }
