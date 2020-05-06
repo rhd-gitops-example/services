@@ -31,7 +31,19 @@ func TestPromoteWithSuccessKeepCacheFalseWithGitHub(t *testing.T) {
 }
 
 func TestPromoteWithSuccessCustomMsg(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "custom commit message here")
+	promoteLocalWithSuccess(t, true, "custom commit message here", "")
+}
+
+func TestPromoteWithEnvSingularDirectoryUsed(t *testing.T) {
+	promoteLocalWithSuccess(t, true, "", "")
+}
+
+func TestPromoteWithEnvFlagIsUsed(t *testing.T) {
+	promoteLocalWithSuccess(t, true, "", "envpassedin")
+}
+
+func TestPromoteWithEnvFlagGetsPriority(t *testing.T) {
+	promoteLocalWithSuccess(t, true, "", "envpassedin")
 }
 
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
@@ -45,7 +57,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	sm := New("tmp", author)
 	sm.repoType = repoType
 	sm.tlsVerify = tlsVerify
-	sm.clientFactory = func(s, ty, r  string, v bool) *scm.Client {
+	sm.clientFactory = func(s, ty, r string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
 		if r != repoType {
 			t.Fatalf("repoType doesn't match %s != %s\n", r, repoType)
@@ -63,7 +75,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch, msg, keepCache)
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,25 +101,27 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 }
 
 func TestPromoteLocalWithSuccessKeepCacheFalse(t *testing.T) {
-	promoteLocalWithSuccess(t, false, "")
+	promoteLocalWithSuccess(t, false, "", "")
 }
 
 func TestPromoteLocalWithSuccessKeepCacheTrue(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "")
+	promoteLocalWithSuccess(t, true, "", "")
 }
 
 func TestPromoteLocalWithSuccessCustomMsg(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "custom commit message supplied")
+	promoteLocalWithSuccess(t, true, "custom commit message supplied", "")
 }
 
-func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
+// TODO IMPL use env correctly. Flag is passed in. Singular directory if one found. Flag gets priority.
+// PS, relies on implementing env correctly.
+func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	stagingRepo := mock.New("/staging", "master")
 	devRepo := NewLocal("/dev")
 
 	sm := New("tmp", author)
-	sm.clientFactory = func(s, t, r  string, v bool) *scm.Client {
+	sm.clientFactory = func(s, t, r string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
 		return client
 	}
@@ -120,7 +134,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, keepCache)
+	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +198,7 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 		mustAddCredentials(t, staging, author): stagingRepo,
 	}
 	sm := New("tmp", author)
-	sm.clientFactory = func(s, t, r  string, v bool) *scm.Client {
+	sm.clientFactory = func(s, t, r string, v bool) *scm.Client {
 		client, _ := fakescm.NewDefault()
 		return client
 	}
@@ -193,7 +207,7 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
+	err := sm.Promote("my-service", dev, staging, dstBranch, "", "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +312,7 @@ func TestRepositoryCloneErrorOmitsToken(t *testing.T) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	client, _ := fakescm.NewDefault()
-	fakeClientFactory := func(s, t, r  string, v bool)  *scm.Client {
+	fakeClientFactory := func(s, t, r string, v bool) *scm.Client {
 		return client
 	}
 	sm := New("tmp", author)
@@ -310,7 +324,7 @@ func TestRepositoryCloneErrorOmitsToken(t *testing.T) {
 		errorMessage := fmt.Errorf("failed to clone repository %s: exit status 128", dev)
 		return nil, errorMessage
 	}
-	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
+	err := sm.Promote("my-service", dev, staging, dstBranch, "", "", false)
 	if err != nil {
 		devRepoToUseInError := fmt.Sprintf(".*%s", dev)
 		test.AssertErrorMatch(t, devRepoToUseInError, err)

@@ -74,6 +74,22 @@ func (m *Repository) CheckoutAndCreate(branch string) error {
 	return m.checkoutErr
 }
 
+// This mock returns staging if the path passed in is environments
+func (m *Repository) DirectoriesUnderPath(path string) []string {
+	if path == "environments" {
+		return []string{"staging"}
+	}
+	return nil
+}
+
+// This mock returns true if the fileName passed in is environments
+func (m *Repository) FileExists(fileName string) bool {
+	if fileName == "environments" {
+		return true
+	}
+	return false
+}
+
 // Clone fulfils the git.Repo interface.
 func (m *Repository) Clone() error {
 	m.cloned = true

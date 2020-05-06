@@ -110,17 +110,11 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	isLocal := fromLocalRepo(fromURL)
 
 	if isLocal {
-		if env != "" {
-			fmt.Printf("[local] an env was provided, todo use it, value is: %s\n", env)
-		}
 		localSource = s.localFactory(fromURL, s.debug)
 		if newBranchName == "" {
 			newBranchName = generateBranchForLocalSource(localSource)
 		}
 	} else {
-		if env != "" {
-			fmt.Printf("[remote] an env was provided, todo use it, value is: %s\n", env)
-		}
 		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
 		if errorSource != nil {
 			return git.GitError("error checking out source repository from Git", fromURL)
@@ -142,10 +136,25 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	reposToDelete = append(reposToDelete, destination)
 
 	var copied []string
+
 	if isLocal {
-		copied, err = local.CopyConfig(serviceName, localSource, destination)
-		if err != nil {
-			return fmt.Errorf("failed to set up local repository: %w", err)
+		foundSingularEnv := ""
+		if destination != nil {
+			dirsUnderPath := destination.DirectoriesUnderPath("environments")
+			if dirsUnderPath != nil {
+				if len(dirsUnderPath) == 1 {
+					foundSingularEnv = dirsUnderPath[0]
+					// TODO impl/move/test
+					fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s", foundSingularEnv)
+					// Haven't gone down the --env flag usage yet, so use this
+					// Todo copy to the env place, if there's just one, with that name being used
+					// If --env is specified then copy there instead
+				}
+				copied, err = local.CopyConfig(serviceName, localSource, destination)
+				if err != nil {
+					return fmt.Errorf("failed to set up local repository: %w", err)
+				}
+			}
 		}
 	} else {
 		copied, err = git.CopyService(serviceName, source, destination)
@@ -160,22 +169,6 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			commitMsg = fmt.Sprintf("Promotion of service `%s` from local filesystem directory `%s`.", serviceName, fromURL)
 		} else {
 			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
-		}
-	}
-
-	foundSingularEnv := ""
-	if destination != nil {
-		// Todo optimise this, can probably do in the one function call
-		if destination.FileExists("environments") {
-			dirsUnderPath := destination.DirectoriesUnderPath("environments")
-			if len(dirsUnderPath) == 1 {
-				foundSingularEnv = dirsUnderPath[0]
-				// TODO impl/move/test
-				fmt.Printf("Destination contains environment directory with only one directory in it, it is: %s", foundSingularEnv)
-				// Haven't gone down the --env flag usage yet, so use this
-			}
-		} else {
-			return fmt.Errorf("destination is somehow nil")
 		}
 	}
 
