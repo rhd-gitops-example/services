@@ -31,7 +31,7 @@ func TestPromoteWithSuccessKeepCacheFalseWithGitHub(t *testing.T) {
 }
 
 func TestPromoteWithSuccessCustomMsg(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "custom commit message here", "")
+	promoteLocalWithSuccess(t, true, "custom commit message here")
 }
 
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
@@ -89,20 +89,18 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 }
 
 func TestPromoteLocalWithSuccessKeepCacheFalse(t *testing.T) {
-	promoteLocalWithSuccess(t, false, "", "")
+	promoteLocalWithSuccess(t, false, "")
 }
 
 func TestPromoteLocalWithSuccessKeepCacheTrue(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "", "")
+	promoteLocalWithSuccess(t, true, "")
 }
 
 func TestPromoteLocalWithSuccessCustomMsg(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "custom commit message supplied", "")
+	promoteLocalWithSuccess(t, true, "custom commit message supplied")
 }
 
-// TODO IMPL use env correctly. Flag is passed in. Singular directory if one found. Flag gets priority.
-// PS, relies on implementing env correctly.
-func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
+func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
 	stagingRepo := mock.New("/staging", "master")
@@ -122,7 +120,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, env, keepCache)
+	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,8 +131,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	location := fmt.Sprintf("/staging/services/environments/%s/my-service/base/config/myfile.yaml", env)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", location)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
@@ -146,19 +143,25 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 }
 
 func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
-	// todo
+	// Destination repo (GitOps repo) to have /environments/staging
+	// Promotion should copy files into that staging directory
 }
 
 func promoteLocalWithSuccessWithFlag(t *testing.T) {
-	// todo
+	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
+	// Promotion should copy files into that staging directory when --env staging is used
 }
 
 func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
-	// todo
+	// Destination repo (GitOps repo) to have /environments/staging
+	// --env prod used
+	// prod folder created and used
 }
 
 func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
-	// todo
+	// Destination repo (GitOps repo) to have /environments/staging
+	// No flags provided
+	// error
 }
 
 func TestAddCredentials(t *testing.T) {

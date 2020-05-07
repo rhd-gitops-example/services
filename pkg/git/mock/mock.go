@@ -76,8 +76,14 @@ func (m *Repository) CheckoutAndCreate(branch string) error {
 
 // This mock returns staging if the path passed in is environments
 func (m *Repository) DirectoriesUnderPath(path string) []string {
-	if path == "environments" {
+	if path == "/" {
+		return []string{"environments"}
+	}
+	if path == "environments/" {
 		return []string{"staging"}
+	}
+	if path == "environments/staging" {
+		return []string{"my-service"}
 	}
 	return nil
 }

@@ -32,16 +32,15 @@ func TestCopyConfig(t *testing.T) {
 }
 
 func TestCopyConfigCanUseTargetDirectoryOverride(t *testing.T) {
-	// TODO implement
 	s := &mockSource{localPath: "/tmp/testing"}
 	files := []string{"config/my-file.yaml", "config/this-file.yaml"}
-	copiedfiles := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
+	copiedfiles := []string{"environments/staging/services/service-a/base/config/my-file.yaml", "environments/staging/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
 	d := &mockDestination{}
 
-	copied, err := CopyConfig("service-a", s, d, "placethefileshere")
+	copied, err := CopyConfig("service-a", s, d, "environments/staging")
 	if err != nil {
 		t.Fatal(err)
 	}

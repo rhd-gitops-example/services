@@ -153,7 +153,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 				dirsUnderPath := destination.DirectoriesUnderPath("environments")
 				if dirsUnderPath != nil {
 					if len(dirsUnderPath) == 1 {
-						// Todo check this doesn;t include subdirs
+						// Todo check this doesn't include subdirs
 						foundSingularEnv := dirsUnderPath[0]
 						if foundSingularEnv != "" {
 							overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
