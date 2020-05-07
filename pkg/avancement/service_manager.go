@@ -26,7 +26,6 @@ type ServiceManager struct {
 	tlsVerify     bool
 	repoType      string
 	debug         bool
-	environment   string
 }
 
 type scmClientFactory func(token, toURL, repoType string, tlsVerify bool) *scm.Client

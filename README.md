@@ -37,6 +37,22 @@ Note that --env always takes precedent.
 
 ## Testing
 
+Linting should be done first (this is done on Travis, and what's good locally should be good there too)
+
+Grab the linter if you haven't already: 
+
+```shell
+GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.0
+```
+
+Then you can do:
+
+```shell
+golangci-lint run
+```
+
+Run the unit tests:
+
 ```shell
 $ go test ./...
 ```

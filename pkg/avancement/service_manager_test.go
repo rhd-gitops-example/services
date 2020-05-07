@@ -142,7 +142,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	}
 }
 
-func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
+func PromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// Promotion should copy files into that staging directory
 	dstBranch := "test-branch"
@@ -181,7 +181,7 @@ func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func promoteLocalWithSuccessWithEnvFlag(t *testing.T) {
+func PromoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
 	// Promotion should copy files into that prod directory when --env prod is used
 	dstBranch := "test-branch"
@@ -220,7 +220,7 @@ func promoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
+func PromoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// --env prod used
 	// prod folder created and used
