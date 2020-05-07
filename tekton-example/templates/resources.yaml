@@ -19,7 +19,7 @@ metadata:
 spec:
   params:
   - name: url
-    value: REPLACE_ME.DOCKER_IMAGE_NAME
+    value: REPLACE_ME.DOCKER_USERNAME/REPLACE_ME.DOCKER_IMAGE_NAME
   type: image
 
 ---
