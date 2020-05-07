@@ -37,7 +37,7 @@ func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -75,7 +75,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
@@ -103,7 +103,7 @@ func TestPromoteLocalWithSuccessCustomMsg(t *testing.T) {
 func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	stagingRepo := mock.New("/staging", "master")
+	stagingRepo := mock.New("/environments/staging", "master")
 	devRepo := NewLocal("/dev")
 
 	sm := New("tmp", author)
@@ -131,7 +131,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
@@ -147,8 +147,7 @@ func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	// Promotion should copy files into that staging directory
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
-	stagingRepo.AddFiles("/environments/staging")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -182,13 +181,12 @@ func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func promoteLocalWithSuccessWithFlag(t *testing.T) {
+func promoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
 	// Promotion should copy files into that prod directory when --env prod is used
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
-	stagingRepo.AddFiles("/environments/staging")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
 	stagingRepo.AddFiles("/environments/prod")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
@@ -230,8 +228,7 @@ func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 	// Promotion should copy files into that prod directory when --env prod is used
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
-	stagingRepo.AddFiles("/environments/staging")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -265,15 +262,11 @@ func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 }
 
 func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
-	// Destination repo (GitOps repo) to have /environments/staging
-	// No flags provided
-	// error
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
-	// Promotion should copy files into that prod directory when --env prod is used
+	// No flags provided, so error
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
-	stagingRepo.AddFiles("/environments/staging")
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
 	stagingRepo.AddFiles("/environments/prod")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
@@ -295,7 +288,6 @@ func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
 		t.Fatal(err)
 	}
 	stagingRepo.AssertBranchNotCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileNotCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
 }
 
 func TestAddCredentials(t *testing.T) {
