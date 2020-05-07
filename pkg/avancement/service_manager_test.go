@@ -142,7 +142,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	}
 }
 
-func PromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
+func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// Promotion should copy files into that staging directory
 	dstBranch := "test-branch"
@@ -181,7 +181,7 @@ func PromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func PromoteLocalWithSuccessWithEnvFlag(t *testing.T) {
+func TestPromoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
 	// Promotion should copy files into that prod directory when --env prod is used
 	dstBranch := "test-branch"
@@ -220,7 +220,7 @@ func PromoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func PromoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
+func TestPromoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// --env prod used
 	// prod folder created and used
@@ -261,7 +261,7 @@ func PromoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 	stagingRepo.AssertPush(t, dstBranch)
 }
 
-func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
+func TestpromoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
 	// No flags provided, so error
 	dstBranch := "test-branch"

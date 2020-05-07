@@ -113,19 +113,13 @@ func (r *Repository) DirectoriesUnderPath(path string) []string {
 func (r *Repository) DestFileExists(path string) bool {
 	filename := r.repoPath(path)
 	_, err := os.Lstat(filename)
-	if err != nil {
-		return false
-	}
-	return true
+	return err != nil
 }
 
 func (r *Repository) FileExists(path string) bool {
 	filename := r.repoPath(path)
 	_, err := os.Lstat(filename)
-	if err != nil {
-		return false
-	}
-	return true
+	return err != nil
 }
 
 func (r *Repository) CopyFile(src, dst string) error {

@@ -92,18 +92,12 @@ func (m *Repository) DirectoriesUnderPath(path string) []string {
 // This mock returns true if the fileName passed in is environments
 // Same as FileExists
 func (m *Repository) DestFileExists(fileName string) bool {
-	if fileName == "environments" {
-		return true
-	}
-	return false
+	return fileName == "environments"
 }
 
 // This mock returns true if the fileName passed in is environments
 func (m *Repository) FileExists(fileName string) bool {
-	if fileName == "environments" {
-		return true
-	}
-	return false
+	return fileName == "environments"
 }
 
 // Clone fulfils the git.Repo interface.
