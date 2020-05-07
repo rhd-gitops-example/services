@@ -34,18 +34,6 @@ func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 	promoteLocalWithSuccess(t, true, "custom commit message here", "")
 }
 
-func TestPromoteWithEnvSingularDirectoryUsed(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "", "")
-}
-
-func TestPromoteWithEnvFlagIsUsed(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "", "envpassedin")
-}
-
-func TestPromoteWithEnvFlagGetsPriority(t *testing.T) {
-	promoteLocalWithSuccess(t, true, "", "envpassedin")
-}
-
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
@@ -134,7 +122,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, "", keepCache)
+	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, env, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +133,8 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
+	location := fmt.Sprintf("/staging/services/environments/%s/my-service/base/config/myfile.yaml", env)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", location)
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
@@ -154,6 +143,22 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg, env string) {
 	} else {
 		stagingRepo.AssertDeletedFromCache(t)
 	}
+}
+
+func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
+	// todo
+}
+
+func promoteLocalWithSuccessWithFlag(t *testing.T) {
+	// todo
+}
+
+func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
+	// todo
+}
+
+func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
+	// todo
 }
 
 func TestAddCredentials(t *testing.T) {
