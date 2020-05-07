@@ -145,23 +145,157 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 func promoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// Promotion should copy files into that staging directory
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	stagingRepo.AddFiles("/environments/staging")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = func(s, ty, r string, v bool) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
+	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+
+	msg := "foo message"
+	// Env not specified, it'll get picked up automatically based on dir structure
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCommitMsg := "msg"
+	if msg == "" {
+		commit := devRepo.GetCommitID()
+		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+	}
+
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
 }
 
 func promoteLocalWithSuccessWithFlag(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
-	// Promotion should copy files into that staging directory when --env staging is used
+	// Promotion should copy files into that prod directory when --env prod is used
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	stagingRepo.AddFiles("/environments/staging")
+	stagingRepo.AddFiles("/environments/prod")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = func(s, ty, r string, v bool) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
+	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+
+	msg := "foo message"
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "prod", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCommitMsg := "msg"
+	if msg == "" {
+		commit := devRepo.GetCommitID()
+		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+	}
+
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/prod/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
 }
 
 func promoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// --env prod used
 	// prod folder created and used
+	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
+	// Promotion should copy files into that prod directory when --env prod is used
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	stagingRepo.AddFiles("/environments/staging")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = func(s, ty, r string, v bool) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
+	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+
+	msg := "foo message"
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "prod", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCommitMsg := "msg"
+	if msg == "" {
+		commit := devRepo.GetCommitID()
+		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+	}
+
+	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/prod/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
+	stagingRepo.AssertPush(t, dstBranch)
 }
 
 func promoteLocalErrorsIfNoFlagMultipleEnvironments(t *testing.T) {
 	// Destination repo (GitOps repo) to have /environments/staging
 	// No flags provided
 	// error
+	// Destination repo (GitOps repo) to have /environments/staging and /environments/prod
+	// Promotion should copy files into that prod directory when --env prod is used
+	dstBranch := "test-branch"
+	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
+	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/staging", "master")
+	stagingRepo.AddFiles("/environments/staging")
+	stagingRepo.AddFiles("/environments/prod")
+	repos := map[string]*mock.Repository{
+		mustAddCredentials(t, dev, author):     devRepo,
+		mustAddCredentials(t, staging, author): stagingRepo,
+	}
+	sm := New("tmp", author)
+	sm.clientFactory = func(s, ty, r string, v bool) *scm.Client {
+		client, _ := fakescm.NewDefault()
+		return client
+	}
+	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
+		return git.Repo(repos[url]), nil
+	}
+	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+
+	msg := "foo message"
+	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stagingRepo.AssertBranchNotCreated(t, "master", dstBranch)
+	stagingRepo.AssertFileNotCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/staging/services/my-service/base/config/myfile.yaml")
 }
 
 func TestAddCredentials(t *testing.T) {

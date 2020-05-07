@@ -41,7 +41,7 @@ type Repository struct {
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
-// in-memory
+// in-memory.
 func New(localPath string, branches ...string) *Repository {
 	return &Repository{localPath: localPath, currentBranch: branches[0], knownBranches: branches}
 }
@@ -205,11 +205,27 @@ func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
 	}
 }
 
+// AssertBranchNotCreated asserts that the named branch was *not* created from the from
+// branch, using the `CheckoutAndCreate` implementation.
+func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
+	if hasString(key(from, name), m.branchesCreated) {
+		t.Fatalf("branch %s was created from %s", name, from)
+	}
+}
+
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
+	}
+}
+
+// AssertFileNotCopiedInBranch asserts the filename was *not* copied from and to in a
+// branch.
+func (m *Repository) AssertFileNotCopiedInBranch(t *testing.T, branch, from, name string) {
+	if hasString(key(branch, from, name), m.copiedFiles) {
+		t.Fatalf("file %s was copied from %s to branch %s", name, from, branch)
 	}
 }
 
