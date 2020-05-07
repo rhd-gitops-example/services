@@ -169,7 +169,7 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCommitMsg := "msg"
+	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
 		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
@@ -203,12 +203,13 @@ func TestPromoteLocalWithSuccessWithEnvFlag(t *testing.T) {
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
 	msg := "foo message"
+	// So it should go the prod folder, not staging
 	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "prod", false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedCommitMsg := "msg"
+	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
 		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
@@ -249,7 +250,7 @@ func TestPromoteLocalWithSuccessFlagGetsPriority(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCommitMsg := "msg"
+	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
 		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
