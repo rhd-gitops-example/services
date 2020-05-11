@@ -12,9 +12,7 @@ Creation of a TaskRun (using `promote-run.yaml`) will then further promote from 
 ## Other Files
 - `service-promote.yaml`: This is the Tekton Task used for promoting from one repository to another. It creates a PullRequest and this represents the promotion from one environment to another (for example, from development to production - in this case represented as repositories)
 - `service-promote-pipeline.yaml`: Creates a pipeline that executes `build-task.yaml` and `service-promote.yaml`
-- `service-promote-pipeline-run.yaml`: Creates a PipelineRun that executes the `service-promote-pipeline` - This will build the code and promote it to a repository you have specified
 - `promote.yaml`: Creates a pull request from one repository to another repository
-- `promote-run.yaml`: Creates a TaskRun that executes a task promoting from a testing repository to a production repository
 - `build-task.yaml`: This task builds a git source into a docker image and pushes to a docker registry
 - `gitconfig`: Data file for the configmap - includes a GitHub user ID and email address
 
@@ -23,7 +21,8 @@ Creation of a TaskRun (using `promote-run.yaml`) will then further promote from 
 - You will need two repositories for this example, one to promote from and one to promote to 
 - For the repository to promote from, an example can be forked from here: https://github.com/akihikokuroda/promote-demo
 - For the repository to promote to, an example can be forked from here:
-https://github.com/akihikokuroda/gitops-test
+ https://github.com/rhd-gitops-example/gitops-example-dev
+- You will also need to have the latest release of the Tekton CLI, which can be downloaded from here: https://github.com/tektoncd/cli
 
 ## Create Tekton Resources
 
@@ -42,7 +41,7 @@ kubectl config set-context --current --namespace=<namespace>
 kubectl apply -f resources
 ```
 
-- Edit all files in the template folder to contain real values. Entries of the form `REPLACE_ME.x` must be replaced with the value you wish to use, i.e at occurences such as `REPLACE_ME.IMAGE_NAME`, `REPLACE_ME.GITHUB_ORG/REPLACE_ME.GITHUB_REPO` etc... There are eight instances to replace in this folder.
+- Edit both files in the template folder to contain real values. Entries of the form `REPLACE_ME.x` must be replaced with the value you wish to use, i.e at occurences such as `REPLACE_ME.IMAGE_NAME`, `REPLACE_ME.GITHUB_ORG/REPLACE_ME.GITHUB_REPO` etc... There are eight instances to replace in this folder.
 
 - Apply the templates folder:
 ```shell 
@@ -56,33 +55,28 @@ kubectl create configmap promote-configmap --from-file=gitconfig
 ```
 This will store your GitHub username and email address in key-value pairs that can be used in the PipelineRun. 
 
-- Edit `service-promote-pipeline-run.yaml` to contain the name of the repository you want to promote to
-
 ## Execute Pipeline
 
-`service-promote-pipeline-run` is designed to build your microservice from its development repository and then promote the new configuration to a GitOps repository (representing a different environment, for example development, staging, test or production).
+The PipelineRun you will create is designed to build your microservice from its development repository and then promote the new configuration to a GitOps repository (representing a different environment, for example development, staging, test or production).
 
-- Create `service-promote-pipeline-run`:
+- To create the PipelineRun, use:
 ```shell
-kubectl create -f service-promote-pipeline-run.yaml
+tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitID=v1 --param github-secret=promote-secret --param github-config=promote-configmap --param to=https://github.com/<github username>/<github repo>.git --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
 ```
 
-## Promote to Prod
+- This creates a PipelineRun that executes the `service-promote-pipeline`, which will build the code and promote it to a repository you have specified
+- The logs will be outputted to your console, and you can also view its progress in the Tekton Dashboard.
 
-You can use `promote-run.yaml` to run a subsequent promote from one GitOps repository to another (e.g staging to prod) after merging the pull request on your first GitOps repository. For this you will need a third repository, and for this you can clone: https://github.com/a-roberts/gitops-repo-testing
+## Promote to Next Managed Environment
 
-- Edit `promote-run.yaml` to contain the URL of the repository you want to promote from, and the URL of the repository you want to promote to
+Optionally, you can run a subsequent promote from one GitOps repository to another (e.g staging to prod) after merging the pull request on your first GitOps repository. For this you will need a third repository, and for this you can fork: https://github.com/rhd-gitops-example/gitops-example-staging
 
-- Create the `promote-run` TaskRun:
+-  To do this second promote, you will need to create a TaskRun that executes a task promoting from a testing repository to a production repository
+- To create the TaskRun, use:
 ```shell
-kubectl create -f promote-run.yaml
+tkn task start promote --param github-secret=promote-secret--param from=https://github.com/<github username>/<github repo> --param from=https://github.com/<github username>/<github repo>.git --param github-config=promote-configmap --param service=service-a -s demo --showlog
 ```
+This will start the TaskRun and output its logs, and you can also view its progress in the Tekton Dashboard.
 
-You can view the progress of your PipelineRun using: 
-```shell
-kubectl get pod <name of pod>
-```
-Or alternatively view its progress in the Tekton Dashboard.
-
-The PipelineRun will clone the code from the inital repository locally, build it and promote it to the final repository. This will open a pull request which you will be able to view in the repository you chose to promote to.
+The TaskRun will clone the code from the initial repository locally, build it and promote it to the final repository. This will open a pull request which you will be able to view in the repository you chose to promote to.
 
