@@ -170,7 +170,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		if sourceEnvironment == nil {
 			return fmt.Errorf("could not determine source environment name")
 		}
-		if sourceEnvironment == nil {
+		if destinationEnvironment == nil {
 			return fmt.Errorf("could not determine destination environment name")
 		}
 		env = destinationEnvironment.Name()

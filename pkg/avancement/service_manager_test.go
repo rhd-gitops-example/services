@@ -37,7 +37,7 @@ func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
+	devRepo, stagingRepo := mock.New("/environments/dev", "master"), mock.New("/environments/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -75,7 +75,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/environments/dev/services/my-service/base/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 
