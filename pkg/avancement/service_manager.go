@@ -174,6 +174,8 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 				}
 				if dirsUnderEnvironments != nil {
 					if len(dirsUnderEnvironments) == 1 {
+						// Todo better name
+						// Todo getuniqueenvironmentfolder - either return environments/name, or just name
 						foundSingularEnv := dirsUnderEnvironments[0].Name()
 						if foundSingularEnv != "" {
 							overrideTargetFolder = filepath.Join("environments", foundSingularEnv)
@@ -193,8 +195,35 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			}
 		}
 	} else {
-		overrideTargetFolder := fmt.Sprintf("environments/%s", env)
-		copied, err = git.CopyService(serviceName, source, destination, overrideTargetFolder)
+		fmt.Printf("\n[REMOTE]\n")
+		fmt.Printf("env (user passed in) is: %s\n", env)
+		if env == "" {
+			dirsUnderPath, err := destination.DirectoriesUnderPath("")
+
+			foundEnvironmentsAtTopLevel := false
+			for _, dir := range dirsUnderPath {
+				if dir.Name() == "environments" {
+					foundEnvironmentsAtTopLevel = true
+					break
+				}
+			}
+
+			if !foundEnvironmentsAtTopLevel {
+				return fmt.Errorf("no environments folder at the GitOps repository")
+			}
+
+			dirsUnderEnvironments, err := destination.DirectoriesUnderPath("environments")
+
+			if err != nil {
+				return fmt.Errorf("could not determine if any folders exist under the found environments folder")
+			}
+			if dirsUnderEnvironments != nil {
+				if len(dirsUnderEnvironments) == 1 {
+					env = dirsUnderEnvironments[0].Name() // Note we lose the meaning of env - todo refactor incase we  care
+				}
+			}
+		}
+		copied, err = git.CopyService(serviceName, source, destination, env)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}
@@ -335,6 +364,6 @@ func generateBranchForLocalSource(source git.Source) string {
 // generateDefaultCommitMsg constructs a default commit message based on the source information.
 func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
 	commit := sourceRepo.GetCommitID()
-	msg := fmt.Sprintf("Promoting service `%s` at commit `%s` from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
+	msg := fmt.Sprintf("Promoting service %s at commit % from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
 	return msg
 }
