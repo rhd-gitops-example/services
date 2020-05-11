@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -12,7 +13,7 @@ import (
 // Only files under /services/[serviceName]/base/config/* are copied to the destination
 //
 // Returns the list of files that were copied, and possibly an error.
-func CopyService(serviceName string, source Source, dest Destination) ([]string, error) {
+func CopyService(serviceName string, source Source, dest Destination, overrideTargetFolder string) ([]string, error) {
 
 	// filePath defines the root folder for serviceName's config in the repository
 	filePath := pathForServiceConfig(serviceName)
@@ -22,14 +23,17 @@ func CopyService(serviceName string, source Source, dest Destination) ([]string,
 		sourcePath := path.Join(prefix, name)
 		destPath := pathForServiceConfig(name)
 		if pathValidForPromotion(serviceName, destPath) {
-			err := dest.CopyFile(sourcePath, destPath)
+			newPath := "/" + overrideTargetFolder + "/" + destPath
+			err := dest.CopyFile(sourcePath, newPath)
 			if err == nil {
-				copied = append(copied, destPath)
+				fmt.Printf("copied %s to %s", sourcePath, newPath)
+				copied = append(copied, newPath)
 			}
 			return err
 		}
 		return nil
 	})
+
 	return copied, err
 }
 

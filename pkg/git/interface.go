@@ -1,6 +1,9 @@
 package git
 
-import "io"
+import (
+	"io"
+	"os"
+)
 
 // Destination is implemented by values that can have files written and stored
 // permanently.
@@ -25,8 +28,7 @@ type Repo interface {
 	Clone() error
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
-	DirectoriesUnderPath(path string) []string
-	FileExists(fileName string) bool
+	DirectoriesUnderPath(path string) ([]os.FileInfo, error)
 	GetCommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error

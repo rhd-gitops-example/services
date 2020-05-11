@@ -99,24 +99,23 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 }
 
 // Returns the directory names of those under a certain path (excluding sub-dirs)
-func (r *Repository) DirectoriesUnderPath(path string) []string {
-	filename := r.repoPath(path)
-	files, _ := ioutil.ReadDir(filename)
-	var dirNames []string
-	for _, file := range files {
-		dirNames = append(dirNames, file.Name())
+// Returns an error if a directory list attempt errored
+func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
+	files, err := ioutil.ReadDir(r.repoPath(path))
+	if err != nil {
+		return nil, err
 	}
-	return dirNames
+	var onlyDirs []os.FileInfo
+	for _, dir := range files {
+		if dir.IsDir() {
+			onlyDirs = append(onlyDirs, dir)
+		}
+	}
+	return onlyDirs, nil
 }
 
 // Todo remove duplication, same as FileExists
 func (r *Repository) DestFileExists(path string) bool {
-	filename := r.repoPath(path)
-	_, err := os.Lstat(filename)
-	return err != nil
-}
-
-func (r *Repository) FileExists(path string) bool {
 	filename := r.repoPath(path)
 	_, err := os.Lstat(filename)
 	return err != nil

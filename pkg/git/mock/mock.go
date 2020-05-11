@@ -195,6 +195,8 @@ func (m *Repository) DeleteCache() error {
 // AssertBranchCreated asserts that the named branch was created from the from
 // branch, using the `CheckoutAndCreate` implementation.
 func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
+	branchesMade := m.branchesCreated
+	fmt.Printf("branches made: %s", branchesMade)
 	if !hasString(key(from, name), m.branchesCreated) {
 		t.Fatalf("branch %s was not created from %s", name, from)
 	}
@@ -211,7 +213,6 @@ func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
-	fmt.Printf("copied files: %s", m.copiedFiles)
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
 	}

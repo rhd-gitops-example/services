@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -138,27 +139,51 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 
 	if isLocal {
 		if destination != nil {
-
-			environmentsFolderExists := destination.FileExists("environments")
 			overrideTargetFolder := ""
 
-			if !environmentsFolderExists {
-				return fmt.Errorf("no environments folder exists for destination repository to promote into")
-			}
-
+			// User provided option, e.g --env staging
 			if env != "" {
 				overrideTargetFolder = fmt.Sprintf("environments/%s", env)
 			} else {
-				dirsUnderPath := destination.DirectoriesUnderPath("environments")
-				if dirsUnderPath != nil {
-					if len(dirsUnderPath) == 1 {
-						// Todo check this doesn't include subdirs
-						foundSingularEnv := dirsUnderPath[0]
+				// Check for a single "environments" folder at the top level
+				// Do a lookup first for an environments folder
+				// Then, if there is one, see if there's just one in that
+
+				dirsUnderPath, err := destination.DirectoriesUnderPath("")
+
+				foundEnvironmentsAtTopLevel := false
+				// If it contains environments...proceed
+				for _, dir := range dirsUnderPath {
+					if dir.Name() == "environments" {
+						foundEnvironmentsAtTopLevel = true
+						break
+					}
+				}
+
+				if !foundEnvironmentsAtTopLevel {
+					return fmt.Errorf("no environments folder at the GitOps repository")
+				}
+
+				dirsUnderEnvironments, err := destination.DirectoriesUnderPath("environments")
+
+				// Get the dirs in there and if there's one we're good
+				// unless you provide an override
+
+				if err != nil {
+					return fmt.Errorf("could not determine if any folders exist under the found environments folder")
+				}
+				if dirsUnderEnvironments != nil {
+					if len(dirsUnderEnvironments) == 1 {
+						foundSingularEnv := dirsUnderEnvironments[0].Name()
 						if foundSingularEnv != "" {
-							overrideTargetFolder = fmt.Sprintf("environments/%s", foundSingularEnv)
+							overrideTargetFolder = filepath.Join("environments", foundSingularEnv)
 						}
 					} else {
-						return fmt.Errorf("multiple environment folders were found and no --env option was specified, failed to promote")
+						var dirsUnderPathNames []string
+						for _, dir := range dirsUnderPath {
+							dirsUnderPathNames = append(dirsUnderPathNames, dir.Name())
+						}
+						return fmt.Errorf("multiple environment folders found on the destination repository and no --env option was specified, failed to promote. These directories are present: %v", dirsUnderPathNames)
 					}
 				}
 			}
@@ -168,7 +193,8 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			}
 		}
 	} else {
-		copied, err = git.CopyService(serviceName, source, destination)
+		overrideTargetFolder := fmt.Sprintf("environments/%s", env)
+		copied, err = git.CopyService(serviceName, source, destination, overrideTargetFolder)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}
@@ -183,6 +209,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		}
 	}
 
+	fmt.Printf("staged files: %s", copied)
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
