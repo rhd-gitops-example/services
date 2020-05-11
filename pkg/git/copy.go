@@ -20,6 +20,7 @@ import (
 func CopyService(serviceName string, source Source, dest Destination, sourceEnvironment, destinationEnvironment string) ([]string, error) {
 	fmt.Printf("in copy\n")
 	// filePath defines the root folder for serviceName's config in the repository
+	// the lookup is done for the source repository
 	filePath := pathForServiceConfig(serviceName, sourceEnvironment)
 	fmt.Printf("about to walk and filepath is: %s\n", filePath)
 	copied := []string{}
@@ -47,7 +48,7 @@ func CopyService(serviceName string, source Source, dest Destination, sourceEnvi
 func pathValidForPromotion(serviceName, filePath, environmentName string) bool {
 	filterPath := filepath.Join(pathForServiceConfig(serviceName, environmentName), "base", "config")
 	validPath := strings.HasPrefix(filePath, filterPath)
-	fmt.Printf("Valid for promotion: %t\n")
+	fmt.Printf("Valid for promotion: %t\n", validPath)
 	return validPath
 }
 
