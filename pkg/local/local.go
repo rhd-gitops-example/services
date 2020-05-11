@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -28,12 +27,8 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, ove
 		sourcePath := path.Join(prefix, name)
 		destPath := pathForDestServiceConfig(serviceName, name)
 		if overrideTargetFolder != "" {
-			destPath = fmt.Sprintf("%s/%s", overrideTargetFolder, destPath)
-			if !dest.DestFileExists(overrideTargetFolder) {
-				// Log output if the destination folder doesn't yet exist - maybe they've typod
-				// E.g. they wanted to use --env prod but went with --prody. Instead of failing, say something
-				fmt.Printf("Note: the overridden --env directory to promote into (%s) does not yet exist and will be created\n", overrideTargetFolder)
-			}
+			destPath = path.Join(overrideTargetFolder, destPath)
+			// Todo log output if the destination folder doesn't yet exist - maybe they've typod
 		}
 		err := dest.CopyFile(sourcePath, destPath)
 		if err == nil {

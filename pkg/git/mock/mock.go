@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -75,31 +76,6 @@ func (m *Repository) CheckoutAndCreate(branch string) error {
 	return m.checkoutErr
 }
 
-// This mock returns staging if the path passed in is environments
-func (m *Repository) DirectoriesUnderPath(path string) []string {
-	if path == "/" {
-		return []string{"environments"}
-	}
-	if path == "environments/" {
-		return []string{"staging"}
-	}
-	if path == "environments/staging" {
-		return []string{"my-service"}
-	}
-	return nil
-}
-
-// This mock returns true if the fileName passed in is environments
-// Same as FileExists
-func (m *Repository) DestFileExists(fileName string) bool {
-	return fileName == "environments"
-}
-
-// This mock returns true if the fileName passed in is environments
-func (m *Repository) FileExists(fileName string) bool {
-	return fileName == "environments"
-}
-
 // Clone fulfils the git.Repo interface.
 func (m *Repository) Clone() error {
 	m.cloned = true
@@ -118,6 +94,16 @@ func (m *Repository) Commit(msg string, author *git.Author) error {
 	}
 	m.commits = append(m.commits, key(m.currentBranch, msg, author.Token))
 	return m.CommitErr
+}
+
+// Not implemented
+func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
+	return nil, nil
+}
+
+// Not implemented
+func (m *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
+	return nil, nil
 }
 
 // Push fulfils the git.Repo interface.

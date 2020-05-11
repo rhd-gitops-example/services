@@ -10,7 +10,6 @@ import (
 type Destination interface {
 	CopyFile(src, dst string) error
 	WriteFile(src io.Reader, dst string) error
-	DestFileExists(filePath string) bool // Todo how can I reuse FileExists instead
 }
 
 // Source is implemented by values that can provide a list of files for reading
@@ -29,6 +28,7 @@ type Repo interface {
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
 	DirectoriesUnderPath(path string) ([]os.FileInfo, error)
+	GetUniqueEnvironmentFolder() (os.FileInfo, error)
 	GetCommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error

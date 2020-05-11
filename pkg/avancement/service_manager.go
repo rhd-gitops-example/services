@@ -150,6 +150,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 				// Then, if there is one, see if there's just one in that
 
 				dirsUnderPath, err := destination.DirectoriesUnderPath("")
+				fmt.Printf("dirsUnderPath: %s\n", dirsUnderPath)
 
 				foundEnvironmentsAtTopLevel := false
 				// If it contains environments...proceed
@@ -196,34 +197,26 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		}
 	} else {
 		fmt.Printf("\n[REMOTE]\n")
-		fmt.Printf("env (user passed in) is: %s\n", env)
-		if env == "" {
-			dirsUnderPath, err := destination.DirectoriesUnderPath("")
-
-			foundEnvironmentsAtTopLevel := false
-			for _, dir := range dirsUnderPath {
-				if dir.Name() == "environments" {
-					foundEnvironmentsAtTopLevel = true
-					break
-				}
-			}
-
-			if !foundEnvironmentsAtTopLevel {
-				return fmt.Errorf("no environments folder at the GitOps repository")
-			}
-
-			dirsUnderEnvironments, err := destination.DirectoriesUnderPath("environments")
-
-			if err != nil {
-				return fmt.Errorf("could not determine if any folders exist under the found environments folder")
-			}
-			if dirsUnderEnvironments != nil {
-				if len(dirsUnderEnvironments) == 1 {
-					env = dirsUnderEnvironments[0].Name() // Note we lose the meaning of env - todo refactor incase we  care
-				}
-			}
+		// Note, not yet documented - because of complications in CopyService's walk method
+		// We probably want --from-env and --to-env instead.
+		// This code gives a good starting point for that
+		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for source repository, error: %s", err.Error())
 		}
-		copied, err = git.CopyService(serviceName, source, destination, env)
+		destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
+		}
+		// Shouldn't hit this, but if so... we don't wanna continue as that'd go panic
+		if sourceEnvironment == nil {
+			return fmt.Errorf("could not determine source environment name")
+		}
+		if sourceEnvironment == nil {
+			return fmt.Errorf("could not determine destination environment name")
+		}
+		env = destinationEnvironment.Name()
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment.Name(), env)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}

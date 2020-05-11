@@ -98,10 +98,46 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 	return err
 }
 
+// Returns the singular directory under the environments folder for a given repo
+// Returns an error if there was a problem in doing so (including if more than one folder found)
+func (r *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
+	topLevelDirs, err := r.DirectoriesUnderPath(r.repoPath())
+	var topLevelDirsNoDotGit []os.FileInfo
+	for _, dir := range topLevelDirs {
+		if dir.Name() != ".git" {
+			topLevelDirsNoDotGit = append(topLevelDirsNoDotGit, dir)
+			break
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	numDirs := len(topLevelDirsNoDotGit)
+	if numDirs != 1 {
+		return nil, err
+	}
+	topLevelDir := topLevelDirsNoDotGit[0]
+	if topLevelDir.Name() != "environments" {
+		return nil, err
+	}
+	lookup := path.Join(r.repoPath(), topLevelDir.Name())
+	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
+	if err != nil {
+		return nil, err
+	}
+	numDirsUnderEnv := len(foundDirsUnderEnv)
+	if numDirsUnderEnv != 1 {
+		return nil, err
+	}
+	foundEnvDir := foundDirsUnderEnv[0]
+	fmt.Printf("Unique environment directory: %s\n", foundEnvDir.Name())
+	return foundEnvDir, nil
+}
+
 // Returns the directory names of those under a certain path (excluding sub-dirs)
 // Returns an error if a directory list attempt errored
 func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
-	files, err := ioutil.ReadDir(r.repoPath(path))
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -112,13 +148,6 @@ func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
 		}
 	}
 	return onlyDirs, nil
-}
-
-// Todo remove duplication, same as FileExists
-func (r *Repository) DestFileExists(path string) bool {
-	filename := r.repoPath(path)
-	_, err := os.Lstat(filename)
-	return err != nil
 }
 
 func (r *Repository) CopyFile(src, dst string) error {

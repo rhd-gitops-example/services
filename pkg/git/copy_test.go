@@ -20,7 +20,7 @@ func TestCopyService(t *testing.T) {
 	}
 	d := &mockDestination{}
 
-	copied, err := CopyService("service-a", s, d)
+	copied, err := CopyService("service-a", s, d, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,11 +40,11 @@ func TestPathValidForPromotion(t *testing.T) {
 		"services/service-name/base/config/dir/below/it/may/contain/important.yaml",
 	}
 	for _, filePath := range promoteTheseWhenServiceNameIsRight {
-		if !pathValidForPromotion(serviceBeingPromoted, filePath) {
+		if !pathValidForPromotion(serviceBeingPromoted, filePath, "") {
 			t.Fatalf("Valid path for promotion for %s incorrectly rejected: %s", serviceBeingPromoted, filePath)
 		}
 		for _, wrongService := range servicesNotBeingPromoted {
-			if pathValidForPromotion(wrongService, filePath) {
+			if pathValidForPromotion(wrongService, filePath, "") {
 				t.Fatalf("Path for service %s incorrectly accepted for promotion: %s", wrongService, filePath)
 			}
 		}
@@ -60,7 +60,7 @@ func TestPathValidForPromotion(t *testing.T) {
 	}
 	for _, badPath := range neverPromoteThese {
 		for _, badServiceName := range badServiceNames {
-			if pathValidForPromotion(badServiceName, badPath) {
+			if pathValidForPromotion(badServiceName, badPath, "") {
 				t.Fatalf("Invalid path %s for promotion of service %s incorrectly accepted", badPath, badServiceName)
 			}
 		}
@@ -70,7 +70,7 @@ func TestPathValidForPromotion(t *testing.T) {
 func TestPathForServiceConfig(t *testing.T) {
 	serviceName := "usefulService"
 	correctPath := "services/usefulService"
-	serviceConfigPath := pathForServiceConfig(serviceName)
+	serviceConfigPath := pathForServiceConfig(serviceName, "")
 	if serviceConfigPath != correctPath {
 		t.Fatalf("Invalid result for pathForServiceConfig(%s): wanted %s got %s", serviceName, correctPath, serviceConfigPath)
 	}
@@ -86,7 +86,7 @@ func TestCopyServiceWithFailureCopying(t *testing.T) {
 	d := &mockDestination{}
 	d.copyError = testError
 
-	copied, err := CopyService("service-a", s, d)
+	copied, err := CopyService("service-a", s, d, "", "")
 	if err != testError {
 		t.Fatalf("unexpected error: got %v, wanted %v", err, testError)
 	}
@@ -94,23 +94,6 @@ func TestCopyServiceWithFailureCopying(t *testing.T) {
 	if !reflect.DeepEqual(copied, []string{}) {
 		t.Fatalf("failed to copy the files, got %#v, want %#v", copied, []string{})
 	}
-}
-
-// Returns true only if filepath is environments or environments/staging
-// Same as FileExists
-func (d *mockDestination) DestFileExists(filepath string) bool {
-	if filepath == "environments" || filepath == "environments/staging" {
-		return true
-	}
-	return false
-}
-
-// Returns true only if filepath is environments or environments/staging
-func (d *mockDestination) FileExists(filepath string) bool {
-	if filepath == "environments" || filepath == "environments/staging" {
-		return true
-	}
-	return false
 }
 
 type mockSource struct {

@@ -13,23 +13,24 @@ import (
 // Only files under /services/[serviceName]/base/config/* are copied to the destination
 //
 // Returns the list of files that were copied, and possibly an error.
-func CopyService(serviceName string, source Source, dest Destination, env string) ([]string, error) {
-
+// Note this currently relies on the environment folder being in *both* the source and destination repos.
+// sourceEnvironment is
+// --env = destination environment
+// todo: determine source before we call copy service, then make sure we use env as a true dest environment only
+func CopyService(serviceName string, source Source, dest Destination, sourceEnvironment, destinationEnvironment string) ([]string, error) {
+	fmt.Printf("in copy\n")
 	// filePath defines the root folder for serviceName's config in the repository
-	filePath := pathForServiceConfig(serviceName, env)
-
+	filePath := pathForServiceConfig(serviceName, sourceEnvironment)
+	fmt.Printf("about to walk and filepath is: %s\n", filePath)
 	copied := []string{}
 	err := source.Walk(filePath, func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
 		fmt.Printf("Source path: %s\n", sourcePath)
-		destPath := pathForServiceConfig(name, env)
-		fmt.Printf("Dest path: %\n", destPath)
-		if pathValidForPromotion(serviceName, destPath, env) {
-			// Todo fix paths - mAYBE
-			// newPath := "/" + overrideTargetFolder + "/" + destPath
+		destPath := pathForServiceConfig(name, destinationEnvironment)
+		fmt.Printf("Dest path: %s\n", destPath)
+		if pathValidForPromotion(serviceName, destPath, destinationEnvironment) {
 			err := dest.CopyFile(sourcePath, destPath)
 			if err == nil {
-				fmt.Printf("copied %s to %s", sourcePath, destPath)
 				copied = append(copied, destPath)
 			}
 			return err
