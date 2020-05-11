@@ -130,7 +130,6 @@ func (r *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
 		return nil, err
 	}
 	foundEnvDir := foundDirsUnderEnv[0]
-	fmt.Printf("Unique environment directory: %s\n", foundEnvDir.Name())
 	return foundEnvDir, nil
 }
 

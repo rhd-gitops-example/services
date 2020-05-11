@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -138,65 +137,24 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	var copied []string
 
 	if isLocal {
+		fmt.Println("LOCAL PROMOTION (GitOps repository to GitOps repository)")
 		if destination != nil {
-			overrideTargetFolder := ""
-
-			// User provided option, e.g --env staging
-			if env != "" {
-				overrideTargetFolder = fmt.Sprintf("environments/%s", env)
-			} else {
-				// Check for a single "environments" folder at the top level
-				// Do a lookup first for an environments folder
-				// Then, if there is one, see if there's just one in that
-
-				dirsUnderPath, err := destination.DirectoriesUnderPath("")
-				fmt.Printf("dirsUnderPath: %s\n", dirsUnderPath)
-
-				foundEnvironmentsAtTopLevel := false
-				// If it contains environments...proceed
-				for _, dir := range dirsUnderPath {
-					if dir.Name() == "environments" {
-						foundEnvironmentsAtTopLevel = true
-						break
-					}
-				}
-
-				if !foundEnvironmentsAtTopLevel {
-					return fmt.Errorf("no environments folder at the GitOps repository")
-				}
-
-				dirsUnderEnvironments, err := destination.DirectoriesUnderPath("environments")
-
-				// Get the dirs in there and if there's one we're good
-				// unless you provide an override
-
-				if err != nil {
-					return fmt.Errorf("could not determine if any folders exist under the found environments folder")
-				}
-				if dirsUnderEnvironments != nil {
-					if len(dirsUnderEnvironments) == 1 {
-						// Todo better name
-						// Todo getuniqueenvironmentfolder - either return environments/name, or just name
-						foundSingularEnv := dirsUnderEnvironments[0].Name()
-						if foundSingularEnv != "" {
-							overrideTargetFolder = filepath.Join("environments", foundSingularEnv)
-						}
-					} else {
-						var dirsUnderPathNames []string
-						for _, dir := range dirsUnderPath {
-							dirsUnderPathNames = append(dirsUnderPathNames, dir.Name())
-						}
-						return fmt.Errorf("multiple environment folders found on the destination repository and no --env option was specified, failed to promote. These directories are present: %v", dirsUnderPathNames)
-					}
-				}
+			// We'd use --env here if it was implemented fully
+			overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
+			if err != nil {
+				return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 			}
-			copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
+			if overrideTargetFolder == nil {
+				return fmt.Errorf("could not determine destination environment name")
+			}
+
+			copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder.Name()))
 			if err != nil {
 				return fmt.Errorf("failed to set up local repository: %w", err)
 			}
 		}
 	} else {
-		fmt.Printf("\n[REMOTE]\n")
+		fmt.Println("Remote promotion (GitOps repository to GitOps repository)")
 		// Note, not yet documented - because of complications in CopyService's walk method
 		// We probably want --from-env and --to-env instead.
 		// This code gives a good starting point for that
@@ -357,6 +315,6 @@ func generateBranchForLocalSource(source git.Source) string {
 // generateDefaultCommitMsg constructs a default commit message based on the source information.
 func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
 	commit := sourceRepo.GetCommitID()
-	msg := fmt.Sprintf("Promoting service %s at commit % from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
+	msg := fmt.Sprintf("Promoting service %s at commit %s from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
 	return msg
 }
