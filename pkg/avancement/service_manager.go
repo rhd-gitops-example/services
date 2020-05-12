@@ -321,6 +321,6 @@ func generateBranchForLocalSource(source git.Source) string {
 // generateDefaultCommitMsg constructs a default commit message based on the source information.
 func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
 	commit := sourceRepo.GetCommitID()
-	msg := fmt.Sprintf("Promoting service %s at commit %s from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
+	msg := fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, fromBranch, from)
 	return msg
 }

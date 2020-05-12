@@ -124,7 +124,10 @@ func (m *Repository) CopyFile(src, dst string) error {
 	if m.copiedFiles == nil {
 		m.copiedFiles = []string{}
 	}
-	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, path.Join(m.localPath, dst)))
+	fmt.Printf("in CopyFile, m.localPath: %s\n", m.localPath)
+	fmt.Printf("in CopyFile, dst: %s\n", dst)
+
+	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, dst))
 	fmt.Printf("m.copiedFiles is now: %s\n", m.copiedFiles)
 	return m.copyFileErr
 
