@@ -139,19 +139,25 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	if isLocal {
 		fmt.Println("LOCAL PROMOTION (GitOps repository to GitOps repository)")
 		if destination != nil {
+			fmt.Println("1")
 			overrideTargetFolder := ""
 			if env != "" { // User option provided (used for destination - where to copy into)
 				overrideTargetFolder = env
 			} else {
+				fmt.Println("2")
 				overrideTargetFolder, err = destination.GetUniqueEnvironmentFolder()
+				fmt.Println("3")
 			}
 			if err != nil {
+				fmt.Println("4")
 				return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 			}
 			if overrideTargetFolder == "" {
+				fmt.Println("5")
 				return fmt.Errorf("could not determine destination environment name")
 			}
-
+			fmt.Println("5")
+			fmt.Printf("Override target folder: %s\n", overrideTargetFolder)
 			copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder))
 			if err != nil {
 				return fmt.Errorf("failed to set up local repository: %w", err)
@@ -191,7 +197,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	commitMsg := message
 	if commitMsg == "" {
 		if isLocal {
-			commitMsg = fmt.Sprintf("Promotion of service `%s` from local filesystem directory `%s`.", serviceName, fromURL)
+			commitMsg = fmt.Sprintf("Promotion of service %s from local filesystem directory %s.", serviceName, fromURL)
 		} else {
 			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
 		}

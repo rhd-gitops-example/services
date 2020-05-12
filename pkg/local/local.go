@@ -23,15 +23,13 @@ type Local struct {
 // This directory is prepended to the destination path
 // Returns the list of files that were copied, and possibly an error.
 func CopyConfig(serviceName string, source git.Source, dest git.Destination, overrideTargetFolder string) ([]string, error) {
-	fmt.Println("in copy config")
-	fmt.Printf("override target folder is: %s\n", overrideTargetFolder)
 	copied := []string{}
 	err := source.Walk("", func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
 		destPath := pathForDestServiceConfig(serviceName, name)
 
 		if overrideTargetFolder != "" {
-			destPath = path.Join(overrideTargetFolder, destPath)
+			destPath = path.Join("/", overrideTargetFolder, destPath)
 			fmt.Printf("destination path is: %s\n", destPath)
 			// Todo log output if the destination folder doesn't yet exist - maybe they've typod
 		}

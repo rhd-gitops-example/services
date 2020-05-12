@@ -103,6 +103,7 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 // string return type for ease of mocking, callers would use .Name() anyway
 // Todo we need a different one for source and target so we can mock it
 func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
+	fmt.Println("in real GetUniqueEnvironmentFolder")
 	topLevelDirs, err := r.DirectoriesUnderPath(r.repoPath())
 	var topLevelDirsNoDotGit []os.FileInfo
 	for _, dir := range topLevelDirs {

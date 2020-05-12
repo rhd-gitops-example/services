@@ -102,11 +102,17 @@ func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
 }
 
 func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
+	fmt.Println("in mock GetUniqueEnvironmentFolder")
 	// Cheap way to do it for mocking.
 	// For /environments/dev and /environments/staging we want to return dev and staging.
 	// The paths have / in them from the test code itself so / here is safe
+	fmt.Printf("m.files: %s\n", m.files)
+	if len(m.files) == 0 {
+		return "", fmt.Errorf("mock tried to get unique environment folder name but found no files for this repository: %s", m.repoName)
+	}
 	splits := strings.Split(m.files[0], "/")
 	foundEnv := splits[2]
+	fmt.Printf("Found unique env: %s\n", foundEnv)
 	return foundEnv, nil
 }
 

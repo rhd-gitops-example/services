@@ -37,7 +37,7 @@ func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/environments/dev", "master"), mock.New("/environments/staging", "master")
+	devRepo, stagingRepo := mock.New("/environments/dev", "master"), mock.New("/environments", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -62,7 +62,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
-	stagingRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AddFiles("/staging")
 
 	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {
@@ -104,7 +104,7 @@ func TestPromoteLocalWithSuccessCustomMsg(t *testing.T) {
 func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	stagingRepo := mock.New("/environments/staging", "master")
+	stagingRepo := mock.New("/environments", "master")
 	devRepo := NewLocal("/dev")
 
 	sm := New("tmp", author)
@@ -120,6 +120,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	}
 	sm.debug = true
 	devRepo.AddFiles("/config/myfile.yaml")
+	stagingRepo.AddFiles("/staging")
 
 	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {
@@ -128,7 +129,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 
 	expectedCommitMsg := msg
 	if expectedCommitMsg == "" {
-		expectedCommitMsg = "Promotion of service `my-service` from local filesystem directory `/root/repo`."
+		expectedCommitMsg = "Promotion of service my-service from local filesystem directory /root/repo."
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
@@ -148,7 +149,7 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	// Promotion should copy files into that staging directory
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/dev", "master"), mock.New("/environments/staging", "master")
+	devRepo, stagingRepo := mock.New("/", "master"), mock.New("/environments", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -161,7 +162,9 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	sm.repoFactory = func(url, _ string, v bool, _ bool) (git.Repo, error) {
 		return git.Repo(repos[url]), nil
 	}
-	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+	// So it'll be at /config/myfile.yaml
+	devRepo.AddFiles("config/myfile.yaml")
+	stagingRepo.AddFiles("staging")
 
 	msg := "foo message"
 	// Env not specified, it'll get picked up automatically based on dir structure
@@ -173,11 +176,11 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
-		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+		expectedCommitMsg = fmt.Sprintf("Promoting service my-service at commit %s from branch master in %s.", commit, dev)
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
-	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/services/my-service/base/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/config/myfile.yaml", "/environments/staging/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AssertCommit(t, dstBranch, expectedCommitMsg, author)
 	stagingRepo.AssertPush(t, dstBranch)
 }
