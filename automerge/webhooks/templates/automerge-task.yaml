@@ -83,4 +83,4 @@ spec:
       valueFrom:
         secretKeyRef:
           name: $(params.github-secret)
-          key: accessToken
+          key: password
