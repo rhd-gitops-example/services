@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: automerge-task
+spec:
+  params:
+  - name: github-config
+    type: string
+    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=gitconfig"
+  - name: github-secret
+    type: string
+    description: Name of the secret containing an access token for Github. Expects Tekton format, 'username' and 'password' keys.
+  - name: event-type
+    type: string
+    description: webhook event type. 'push', 'pull_request' are the types we're interested in. 
+  - name: branch-name
+    type: string
+    description: Git branch name, from the push or pull_request
+  - name: pull-request-url
+    type: string
+    description: The URL of the pull request, where applicable
+  volumes:
+  - name: gitconfig
+    configMap:
+      name: $(params.github-config)
+      items:
+        - key: gitconfig
+          path: gitconfig
+  inputs:
+    resources:
+      - name: git-source
+        type: git
+  steps:
+  - name: check-yaml
+    image: YOUR_DOCKER_HUB_ID/hub-test
+    script: |
+      #!/bin/bash
+      kubectl apply -k git-source/env --dry-run=client
+  - name: merge-pr
+    image: YOUR_DOCKER_HUB_ID/hub-test
+    volumeMounts:
+    - name: gitconfig
+      mountPath: /root
+    script: |
+      #!/bin/bash -x
+
+      if [ $(params.event-type) = "push" ]; then
+        echo "git push on branch $(params.branch-name)"
+        if [ $(params.branch-name) = "refs/heads/master" ]; then
+          echo "kubectl apply -k env"
+        else
+          echo "do nothing"
+        fi
+      elif [ $(params.event-type) = "pull_request" ]; then
+      
+        cat /root/gitconfig >> $HOME/.gitconfig
+        # GHE requires some extra config
+        # Replace `YOUR_GHE` with your GitHub Enterprise domain e.g. `github.ibm.com`
+        git config --global --add hub.host YOUR_GHE
+
+        cd git-source
+        export HUB_VERBOSE=true
+        hub merge $(params.pull-request-url)
+        git push -u origin master
+
+        # Pushing the change will merge the PR. To close the PR we need to delete its branch. 
+        # We can do this if we are confident that the PR comes from a branch and not a fork. 
+        echo git push origin --delete $(params.branch-name)
+
+        # On GitHub Enterprise - not GitHub.com - the issue will still be open. 
+        # We don't know if this is a bug or a feature. One way to work around this is with code of the form, 
+        # export GITHUB_HOST=github.ibm.com
+        # hub api -XPATCH repos/mnuttall/gitops-example-dev/pulls/4 -f state=closed
+        # See https://github.com/github/hub/issues/1151
+
+      
+      else 
+        echo "Unrecognized event-type $(params.event-type)"
+      fi
+
+    env:
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: $(params.github-secret)
+          key: accessToken

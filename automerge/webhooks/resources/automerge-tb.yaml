@@ -1,0 +1,32 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: automerge-pipeline-pullrequest-binding
+  namespace: tekton-pipelines
+spec:
+  params:
+  - name: pullrequesturl
+    value: $(body.pull_request.html_url)
+  - name: gitrepositoryurl
+    value: $(body.repository.clone_url)
+  - name: event-type
+    value: $(header.X-GitHub-Event)
+  - name: branch-name
+    value: $(body.pull_request.head.ref)
+---
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: automerge-pipeline-push-binding
+  namespace: tekton-pipelines
+spec:
+  params:
+  - name: gitrepositoryurl
+    value: $(body.repository.clone_url)
+  - name: event-type
+    value: $(header.X-GitHub-Event)
+  - name: branch-name
+    value: $(body.ref)
+

@@ -48,18 +48,6 @@ go test ./pkg/git -run TestCopyServiceWithFailureCopying
 
 ## Getting started
 
-This section is temporary. To create a sample promotion Pull Request, until https://github.com/rhd-gitops-example/services/issues/8 is done:
-
-- Fork the repository https://github.com/rhd-gitops-example/gitops-example-dev
-- Fork the repository https://github.com/rhd-gitops-example/gitops-example-staging
-- Inside the services folder build the code: `go build ./cmd/services`
-- export GITHUB_TOKEN=[your token]
-- Substitute your repository URLs for those in square brackets:
-
-```shell
-./services promote --from [url.to.dev] --to [url.to.staging] --service service-a`
-```
-
 At a high level the services command currently:
 
 - git clones the source and target repositories into ~/.promotion/cache
@@ -69,10 +57,7 @@ At a high level the services command currently:
 - pushes the cloned target
 - creates a PR from the new branch in the target to master in the target
 
-## Important notes:
-
-- We need to remove the local cache between requests. See https://github.com/rhd-gitops-example/services/issues/20. Until then, add `rm -rf ~/.promotion/cache; ` before subsequent requests.
-- See https://github.com/rhd-gitops-example/services/issues/19 for an issue related to problems 'promoting' config from a source repo into a gitops repo. 
+See the [tekton-example](./tekton-example/README.md) directory for more on using the `promote` task with Tekton. See [automerge](./automerge/README.md) for some suggestions as to how promotion PullRequests may be merged automatically where appropriate.
 
 ## Release process
 

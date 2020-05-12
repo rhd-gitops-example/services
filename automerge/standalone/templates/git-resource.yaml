@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: gitops-repo
+spec:
+  params:
+  - name: revision
+    value: master
+  - name: url
+    value: https://github.com/YOUR_GITHUB_ID/gitops-example-dev
+  type: git
