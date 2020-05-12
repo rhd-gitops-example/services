@@ -18,11 +18,10 @@ import (
 // --env = destination environment
 // todo: determine source before we call copy service, then make sure we use env as a true dest environment only
 func CopyService(serviceName string, source Source, dest Destination, sourceEnvironment, destinationEnvironment string) ([]string, error) {
-	fmt.Printf("in copy\n")
 	// filePath defines the root folder for serviceName's config in the repository
 	// the lookup is done for the source repository
 	filePath := pathForServiceConfig(serviceName, sourceEnvironment)
-	fmt.Printf("about to walk and filepath is: %s\n", filePath)
+	fmt.Printf("about to walk and filepath for service config is: %s\n", filePath)
 	copied := []string{}
 	err := source.Walk(filePath, func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)

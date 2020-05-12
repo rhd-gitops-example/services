@@ -139,8 +139,12 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	if isLocal {
 		fmt.Println("LOCAL PROMOTION (GitOps repository to GitOps repository)")
 		if destination != nil {
-			// We'd use --env here if it was implemented fully
-			overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
+			overrideTargetFolder := ""
+			if env != "" { // User option provided (used for destination - where to copy into)
+				overrideTargetFolder = env
+			} else {
+				overrideTargetFolder, err = destination.GetUniqueEnvironmentFolder()
+			}
 			if err != nil {
 				return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 			}
@@ -173,12 +177,16 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		if destinationEnvironment == "" {
 			return fmt.Errorf("could not determine destination environment name")
 		}
-		env = destinationEnvironment
-		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, env)
+		if env != "" {
+			destinationEnvironment = env
+		}
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, path.Join("environments", destinationEnvironment))
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}
 	}
+
+	fmt.Printf("staged files: %s", copied)
 
 	commitMsg := message
 	if commitMsg == "" {
@@ -188,8 +196,6 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
 		}
 	}
-
-	fmt.Printf("staged files: %s", copied)
 	if err := destination.StageFiles(copied...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}

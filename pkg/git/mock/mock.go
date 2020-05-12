@@ -108,6 +108,7 @@ func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
 	// The paths have / in them from the test code itself so / here is safe
 	splits := strings.Split(m.files[0], "/")
 	foundEnv := splits[2]
+	fmt.Printf("found env folder name: %s\n", foundEnv)
 	return foundEnv, nil
 }
 
@@ -144,18 +145,23 @@ func (m *Repository) WriteFile(src io.Reader, dst string) error {
 // When CopyService() drives Walk(), 'base' is typically services/service-name
 // Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
 func (m *Repository) Walk(base string, cb func(string, string) error) error {
+	fmt.Println("in mock walk 1")
 	if m.files == nil {
 		return nil
 	}
 
+	fmt.Println("in mock walk 2")
 	for _, f := range m.files {
+		fmt.Printf("in mock walk 3, looking for prefix %s in %s\n", f, path.Join(m.localPath, base))
 		if strings.HasPrefix(f, path.Join(m.localPath, base)) {
+			fmt.Println("in mock walk 4")
 			splitString := filepath.Dir(base) + "/"
 			splitPoint := strings.Index(f, splitString) + len(splitString)
 			prefix := f[:splitPoint]
 			name := f[splitPoint:]
 			err := cb(prefix, name)
 			if err != nil {
+				fmt.Println("in mock walk 5")
 				return err
 			}
 		}
