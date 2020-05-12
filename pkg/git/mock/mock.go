@@ -104,11 +104,9 @@ func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
 func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
 	// Cheap way to do it for mocking.
 	// For /environments/dev and /environments/staging we want to return dev and staging.
-	fmt.Printf("files: %s\n", m.files)
 	// The paths have / in them from the test code itself so / here is safe
 	splits := strings.Split(m.files[0], "/")
 	foundEnv := splits[2]
-	fmt.Printf("found env folder name: %s\n", foundEnv)
 	return foundEnv, nil
 }
 
@@ -127,6 +125,7 @@ func (m *Repository) CopyFile(src, dst string) error {
 		m.copiedFiles = []string{}
 	}
 	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, path.Join(m.localPath, dst)))
+	fmt.Printf("m.copiedFiles is now: %s\n", m.copiedFiles)
 	return m.copyFileErr
 
 }
@@ -145,23 +144,18 @@ func (m *Repository) WriteFile(src io.Reader, dst string) error {
 // When CopyService() drives Walk(), 'base' is typically services/service-name
 // Thus we take each /full/path/to/file/in/mockSource.files[] and split it at 'services/' as happens in the Walk() method we're mocking.
 func (m *Repository) Walk(base string, cb func(string, string) error) error {
-	fmt.Println("in mock walk 1")
 	if m.files == nil {
 		return nil
 	}
-
-	fmt.Println("in mock walk 2")
 	for _, f := range m.files {
-		fmt.Printf("in mock walk 3, looking for prefix %s in %s\n", f, path.Join(m.localPath, base))
-		if strings.HasPrefix(f, path.Join(m.localPath, base)) {
-			fmt.Println("in mock walk 4")
+		// Basically pathToService
+		if strings.HasPrefix(f, m.localPath) {
 			splitString := filepath.Dir(base) + "/"
 			splitPoint := strings.Index(f, splitString) + len(splitString)
 			prefix := f[:splitPoint]
 			name := f[splitPoint:]
 			err := cb(prefix, name)
 			if err != nil {
-				fmt.Println("in mock walk 5")
 				return err
 			}
 		}
@@ -210,6 +204,7 @@ func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
+	fmt.Printf("copied files: %s\n", m.copiedFiles)
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
 	}

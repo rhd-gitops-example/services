@@ -72,7 +72,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
-		expectedCommitMsg = fmt.Sprintf("Promoting service `my-service` at commit `%s` from branch `master` in `%s`.", commit, dev)
+		expectedCommitMsg = fmt.Sprintf("Promoting service my-service at commit %s from branch master in %s.", commit, dev)
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
