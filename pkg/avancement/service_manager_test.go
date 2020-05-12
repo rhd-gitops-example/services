@@ -62,6 +62,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
+	stagingRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
 
 	err := sm.Promote("my-service", dev, staging, dstBranch, msg, "", keepCache)
 	if err != nil {

@@ -101,9 +101,14 @@ func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
 	return nil, nil
 }
 
-// Not implemented
-func (m *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
-	return nil, nil
+func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
+	// Cheap way to do it for mocking.
+	// For /environments/dev and /environments/staging we want to return dev and staging.
+	fmt.Printf("files: %s\n", m.files)
+	// The paths have / in them from the test code itself so / here is safe
+	splits := strings.Split(m.files[0], "/")
+	foundEnv := splits[2]
+	return foundEnv, nil
 }
 
 // Push fulfils the git.Repo interface.

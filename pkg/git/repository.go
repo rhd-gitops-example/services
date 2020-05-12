@@ -100,7 +100,9 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 
 // Returns the singular directory under the environments folder for a given repo
 // Returns an error if there was a problem in doing so (including if more than one folder found)
-func (r *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
+// string return type for ease of mocking, callers would use .Name() anyway
+// Todo we need a different one for source and target so we can mock it
+func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
 	topLevelDirs, err := r.DirectoriesUnderPath(r.repoPath())
 	var topLevelDirsNoDotGit []os.FileInfo
 	for _, dir := range topLevelDirs {
@@ -110,27 +112,27 @@ func (r *Repository) GetUniqueEnvironmentFolder() (os.FileInfo, error) {
 		}
 	}
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	numDirs := len(topLevelDirsNoDotGit)
 	if numDirs != 1 {
-		return nil, err
+		return "", err
 	}
 	topLevelDir := topLevelDirsNoDotGit[0]
 	if topLevelDir.Name() != "environments" {
-		return nil, err
+		return "", err
 	}
 	lookup := path.Join(r.repoPath(), topLevelDir.Name())
 	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	numDirsUnderEnv := len(foundDirsUnderEnv)
 	if numDirsUnderEnv != 1 {
-		return nil, err
+		return "", err
 	}
 	foundEnvDir := foundDirsUnderEnv[0]
-	return foundEnvDir, nil
+	return foundEnvDir.Name(), nil
 }
 
 // Returns the directory names of those under a certain path (excluding sub-dirs)

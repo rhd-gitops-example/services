@@ -144,11 +144,11 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			if err != nil {
 				return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 			}
-			if overrideTargetFolder == nil {
+			if overrideTargetFolder == "" {
 				return fmt.Errorf("could not determine destination environment name")
 			}
 
-			copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder.Name()))
+			copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder))
 			if err != nil {
 				return fmt.Errorf("failed to set up local repository: %w", err)
 			}
@@ -167,14 +167,14 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 			return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 		}
 		// Shouldn't hit this, but if so... we don't wanna continue as that'd go panic
-		if sourceEnvironment == nil {
+		if sourceEnvironment == "" {
 			return fmt.Errorf("could not determine source environment name")
 		}
-		if destinationEnvironment == nil {
+		if destinationEnvironment == "" {
 			return fmt.Errorf("could not determine destination environment name")
 		}
-		env = destinationEnvironment.Name()
-		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment.Name(), env)
+		env = destinationEnvironment
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, env)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}

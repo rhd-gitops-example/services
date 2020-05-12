@@ -28,7 +28,7 @@ type Repo interface {
 	Checkout(branch string) error
 	CheckoutAndCreate(branch string) error
 	DirectoriesUnderPath(path string) ([]os.FileInfo, error)
-	GetUniqueEnvironmentFolder() (os.FileInfo, error)
+	GetUniqueEnvironmentFolder() (string, error)
 	GetCommitID() string
 	StageFiles(filenames ...string) error
 	Commit(msg string, author *Author) error
