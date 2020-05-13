@@ -92,6 +92,7 @@ const fromBranch = "master"
 func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, message, env string, keepCache bool) error {
 	var source, destination git.Repo
 	var reposToDelete []git.Repo
+	fmt.Println("in promote")
 
 	defer func(keepRepos bool, repos *[]git.Repo) {
 		if !keepRepos {
