@@ -29,11 +29,10 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 
 ## Using environments 
 
-A `--env` option can be provided to the `promote` command. Doing so will result in the usual config files files being copied into a specified destination's repository's folder: `--env staging` would result in a pull request with the staged files being placed in the `environments/staging` folder for the GitOps repository. The directory is created and output is provided from the command indicating this, in the event you made a mistake.
 
-If no `--env` option is provided, but an `environments` folder does exist on the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `environments/<the only folder>` directory.
+If an `environments` folder exists exist on the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `environments/<the only folder>` directory.
 
-Note that --env always takes precedent. 
+Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
 
 ## Testing
 

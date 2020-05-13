@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -20,15 +19,12 @@ import (
 func CopyService(serviceName string, source Source, dest Destination, sourceEnvironment, destinationEnvironment string) ([]string, error) {
 	// filePath defines the root folder for serviceName's config in the repository
 	// the lookup is done for the source repository
-	fmt.Println("in copy service")
 	filePath := pathForServiceConfig(serviceName, sourceEnvironment)
 	copied := []string{}
 	err := source.Walk(filePath, func(prefix, name string) error {
 		sourcePath := path.Join(prefix, name)
 		destPath := pathForServiceConfig(name, destinationEnvironment)
-		fmt.Printf("checking if valid for promotion, params: %s, %s, %s\n", serviceName, destPath, destinationEnvironment)
 		if pathValidForPromotion(serviceName, destPath, destinationEnvironment) {
-			fmt.Printf("Copying from path %s to path %s\n", sourcePath, destPath)
 			err := dest.CopyFile(sourcePath, destPath)
 			if err == nil {
 				copied = append(copied, destPath)
@@ -44,7 +40,6 @@ func CopyService(serviceName string, source Source, dest Destination, sourceEnvi
 //  For a given serviceName, only files in environments/envName/services/serviceName/base/config/* are valid for promotion
 func pathValidForPromotion(serviceName, filePath, environmentName string) bool {
 	filterPath := filepath.Join(pathForServiceConfig(serviceName, environmentName), "base", "config")
-	fmt.Printf("checking if %s starts with %s\n", filePath, filterPath)
 	validPath := strings.HasPrefix(filePath, filterPath)
 	return validPath
 }

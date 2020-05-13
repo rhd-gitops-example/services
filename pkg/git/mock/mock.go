@@ -102,17 +102,14 @@ func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
 }
 
 func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
-	fmt.Println("in mock GetUniqueEnvironmentFolder")
 	// Cheap way to do it for mocking.
 	// For /environments/dev and /environments/staging we want to return dev and staging.
 	// The paths have / in them from the test code itself so / here is safe
-	fmt.Printf("m.files: %s\n", m.files)
-	if len(m.files) == 0 {
-		return "", fmt.Errorf("mock tried to get unique environment folder name but found no files for this repository: %s", m.repoName)
+	if len(m.files) != 1 {
+		return "", fmt.Errorf("mock tried to get unique environment folder name but found no files for this repository, or several env folders: %s", m.repoName)
 	}
 	splits := strings.Split(m.files[0], "/")
 	foundEnv := splits[2]
-	fmt.Printf("Found unique env: %s\n", foundEnv)
 	return foundEnv, nil
 }
 
@@ -130,13 +127,8 @@ func (m *Repository) CopyFile(src, dst string) error {
 	if m.copiedFiles == nil {
 		m.copiedFiles = []string{}
 	}
-	fmt.Printf("in CopyFile, m.localPath: %s\n", m.localPath)
-	fmt.Printf("in CopyFile, dst: %s\n", dst)
-
 	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, dst))
-	fmt.Printf("m.copiedFiles is now: %s\n", m.copiedFiles)
 	return m.copyFileErr
-
 }
 
 // WriteFile fulfils the git.Repo interface.
@@ -195,8 +187,6 @@ func (m *Repository) DeleteCache() error {
 // AssertBranchCreated asserts that the named branch was created from the from
 // branch, using the `CheckoutAndCreate` implementation.
 func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
-	branchesMade := m.branchesCreated
-	fmt.Printf("branches made: %s", branchesMade)
 	if !hasString(key(from, name), m.branchesCreated) {
 		t.Fatalf("branch %s was not created from %s", name, from)
 	}
@@ -213,7 +203,6 @@ func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
-	fmt.Printf("copied files: %s\n", m.copiedFiles)
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
 	}

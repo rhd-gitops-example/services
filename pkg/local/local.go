@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,9 +28,8 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, ove
 		destPath := pathForDestServiceConfig(serviceName, name)
 
 		if overrideTargetFolder != "" {
+			// Todo do I need / ?
 			destPath = path.Join("/", overrideTargetFolder, destPath)
-			fmt.Printf("destination path is: %s\n", destPath)
-			// Todo log output if the destination folder doesn't yet exist - maybe they've typod
 		}
 		err := dest.CopyFile(sourcePath, destPath)
 		if err == nil {
