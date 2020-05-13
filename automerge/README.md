@@ -45,12 +45,7 @@ Edit the four files in the 'templates' directory.
 
 - In `automerge-task.yaml` replace `YOUR_DOCKER_HUB_ID` with your DockerHub id.
 - In `git-resource.yaml` replace `YOUR_GITHUB_ID` with your GitHub id.
-- In `github-secret.yaml` replace `[your-github-token-with-repo-access]` with your base64-encoded token. Run this command to get the right string:
-
-```sh
-echo -n [your-token] | base64
-```
-
+- In `github-secret.yaml` replace `[your-github-token-with-repo-access]` with your GitHub token.
 - In pull-request.yaml replace YOUR_PULL_REQUEST_URL with your pull request URL, e.g. `https://github.com/mnuttall/gitops-example-dev/pull/22`
 
 Apply all the Tekton resources:
@@ -70,7 +65,7 @@ The pipeline will do a dry run to test that the yaml in the Pull Request is good
 
 ## Tekton Dashboard Webhooks Extension
 
-See the [Getting Started](https://github.com/tektoncd/experimental/blob/master/webhooks-extension/docs/GettingStarted.md) guide for setup guidelines. Our example uses GitHub Enterprise (GHE) and expects webhooks to be delivered to a cluster that is routeable to from GHE.
+See the [Getting Started](https://github.com/tektoncd/experimental/blob/master/webhooks-extension/docs/GettingStarted.md) guide for setup guidelines. Our example uses GitHub Enterprise (GHE) and expects webhooks to be delivered to a cluster that is routeable from GHE.
 
 ### Secrets and Service Accounts
 
@@ -130,6 +125,6 @@ Using the Tekton Dashboard webhooks extension, associate the `automerge-pipeline
 - The second run executes the bulk of `automerge-task`: a merge commit is created and pushed, and its associated branch deleted.
 
 TODO:
-A discrepancy occurs between running this task against GitHub and GitHub Enterprise. On GHE, while the commit is merged the PR remains open whereas on GitHub, it is shown as merged. A commented out section in `automerge-task` notes this, which will be investigated further in a separate issue. 
+A discrepancy occurs between running this task against GitHub and GitHub Enterprise. On GHE, while the commit is merged the PR remains open whereas on GitHub, it is shown as merged. A commented out section in `automerge-task` notes this, which will be investigated under https://github.com/rhd-gitops-example/services/issues/76.
 
 - Finally the third run executes `echo "kubectl apply -k env"`. Were you to remove the `echo` then this would result in the updated configuration being deployed.
