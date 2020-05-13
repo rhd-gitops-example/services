@@ -12,6 +12,8 @@ This example is for more advanced users. Start with the [tekton-example](../tekt
 - [`tkn`](https://github.com/tektoncd/cli) if you're not using webhooks
 - [`docker`](https://docs.docker.com/get-docker/)
 
+*Note* The 'standalone' code was developed on Docker Desktop and does not yet include the Role-Based Access Control configuration necessary for it to run on OpenShift or other locked-down environments. The 'webhook' code was developed on OpenShift but used a ServiceAccount that had a generous Role attached to it. Full RBAC support should be added to this example under https://github.com/rhd-gitops-example/services/issues/77.
+
 ## Setup - both cases
 
 Our samples currently work with GitHub. They use the `hub` CLI to create a merge commit that when pushed, will merge the associated Pull Request. See [here](https://hub.github.com/hub-merge.1.html) for more details.
