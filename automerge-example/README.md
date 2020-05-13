@@ -4,7 +4,15 @@ The `promote` task initiates change by creating Pull Requests. Sometimes a team 
 
 We have two subdirectories: 'standalone' and 'webhooks'. In the former case, a Tekton PipelineRun must be created manually. In the latter, the [Tekton Dashboard Webhooks Extension](https://github.com/tektoncd/experimental/tree/master/webhooks-extension) is used to start an automerge PipelineRun in response to a PullRequest arriving at a GitOps repository.
 
-# Setup - both cases
+## Prerequisites
+
+This example is for more advanced users. Start with the [tekton-example](../tekton-example/README.md) if you're new to the tool. You should have a good understanding of the tool, its purposes and syntax before working through the 'automerge' topic. In addition to the `services` binary you will need the following tools installed:
+
+- [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- [`tkn`](https://github.com/tektoncd/cli) if you're not using webhooks
+- [`docker`](https://docs.docker.com/get-docker/)
+
+## Setup - both cases
 
 Our samples currently work with GitHub. They use the `hub` CLI to create a merge commit that when pushed, will merge the associated Pull Request. See [here](https://hub.github.com/hub-merge.1.html) for more details.
 
@@ -41,7 +49,7 @@ You will need a GitHub token with repository access in order to merge Pull Reque
 
 ## Standalone case
 
-Edit the four files in the 'templates' directory.
+Edit the files in the 'standalone/templates' directory.
 
 - In `automerge-task.yaml` replace `YOUR_DOCKER_HUB_ID` with your DockerHub id.
 - In `git-resource.yaml` replace `YOUR_GITHUB_ID` with your GitHub id.
