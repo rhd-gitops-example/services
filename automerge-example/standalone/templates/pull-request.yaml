@@ -9,5 +9,5 @@ spec:
     value: YOUR_PULL_REQUEST_URL
   secrets:
    - fieldName: authToken
-     secretName: github-secrets
-     secretKey: token
+     secretName: github-secret
+     secretKey: password
