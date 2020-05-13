@@ -188,7 +188,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		}
 	}
 	if err := destination.StageFiles(copied...); err != nil {
-		return fmt.Errorf("failed to stage files: %w", err)
+		return fmt.Errorf("failed to stage files %s: %w", copied, err)
 	}
 	if err := destination.Commit(commitMsg, s.author); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)

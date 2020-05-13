@@ -98,7 +98,7 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 	return err
 }
 
-// Returns the singular directory under the environments folder for a given repo
+// Returns the single directory under the environments folder for a given repo
 // Returns an error if there was a problem in doing so (including if more than one folder found)
 // string return type for ease of mocking, callers would use .Name() anyway
 func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
@@ -122,13 +122,14 @@ func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
 		return "", err
 	}
 	lookup := path.Join(r.repoPath(), topLevelDir.Name())
+
 	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
 	if err != nil {
 		return "", err
 	}
 	numDirsUnderEnv := len(foundDirsUnderEnv)
 	if numDirsUnderEnv != 1 {
-		return "", err
+		return "", fmt.Errorf("found %d directories under environments folder, wanted one. Looked under directory %s", numDirsUnderEnv, lookup)
 	}
 	foundEnvDir := foundDirsUnderEnv[0]
 	return foundEnvDir.Name(), nil
@@ -161,7 +162,18 @@ func (r *Repository) CopyFile(src, dst string) error {
 
 // This does the git add command on file(s)
 func (r *Repository) StageFiles(filenames ...string) error {
-	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
+	var stripLeadingSlashFromFilenames []string
+	// Strip the leading slash here because we git add *from* the repository folder
+	// and if we don't we'll try and add / which is from the root directory on our filesystem
+	for _, filename := range filenames {
+		if filename[0] == filepath.Separator {
+			stripLeadingSlashFromFilenames = append(stripLeadingSlashFromFilenames, filename[1:])
+		} else {
+			stripLeadingSlashFromFilenames = append(stripLeadingSlashFromFilenames, filename)
+		}
+	}
+	fmt.Printf("git adding %s from repo path :%s\n", stripLeadingSlashFromFilenames, r.repoPath())
+	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, stripLeadingSlashFromFilenames...)...)
 	return err
 }
 
