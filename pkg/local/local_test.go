@@ -15,7 +15,7 @@ import (
 func TestCopyConfig(t *testing.T) {
 	s := &mockSource{localPath: "/tmp/testing"}
 	files := []string{"config/my-file.yaml", "config/this-file.yaml"}
-	copiedfiles := []string{"/environments/dev/services/service-a/base/config/my-file.yaml", "/environments/dev/services/service-a/base/config/this-file.yaml"}
+	copiedfiles := []string{"environments/dev/services/service-a/base/config/my-file.yaml", "environments/dev/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
@@ -34,7 +34,7 @@ func TestCopyConfig(t *testing.T) {
 func TestCopyConfigCanUseTargetDirectoryOverride(t *testing.T) {
 	s := &mockSource{localPath: "/tmp/testing"}
 	files := []string{"config/my-file.yaml", "config/this-file.yaml"}
-	copiedfiles := []string{"/environments/staging/services/service-a/base/config/my-file.yaml", "/environments/staging/services/service-a/base/config/this-file.yaml"}
+	copiedfiles := []string{"environments/staging/services/service-a/base/config/my-file.yaml", "environments/staging/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}

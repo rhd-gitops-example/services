@@ -14,7 +14,7 @@ import (
 
 func TestCopyService(t *testing.T) {
 	s := &mockSource{localPath: "/"}
-	files := []string{"/environments/dev/services/service-a/base/config/my-file.yaml", "/environments/dev/services/service-a/base/config/this-file.yaml"}
+	files := []string{"environments/dev/services/service-a/base/config/my-file.yaml", "environments/dev/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
@@ -38,9 +38,9 @@ func TestPathValidForPromotion(t *testing.T) {
 	serviceBeingPromoted := "service-name"
 	servicesNotBeingPromoted := []string{"svc", "base", "serviceName", "services"}
 	promoteTheseWhenServiceNameIsRight := []string{
-		"/environments/dev/services/service-name/base/config/kustomization.yaml",
-		"/environments/dev/services/service-name/base/config/deployment.yaml",
-		"/environments/dev/services/service-name/base/config/dir/below/it/may/contain/important.yaml",
+		"environments/dev/services/service-name/base/config/kustomization.yaml",
+		"environments/dev/services/service-name/base/config/deployment.yaml",
+		"environments/dev/services/service-name/base/config/dir/below/it/may/contain/important.yaml",
 	}
 	for _, filePath := range promoteTheseWhenServiceNameIsRight {
 		if !pathValidForPromotion(serviceBeingPromoted, filePath, "dev") {
@@ -74,7 +74,7 @@ func TestPathValidForPromotion(t *testing.T) {
 
 func TestPathForServiceConfig(t *testing.T) {
 	serviceName := "usefulService"
-	correctPath := "/environments/dev/services/usefulService"
+	correctPath := "environments/dev/services/usefulService"
 	serviceConfigPath := pathForServiceConfig(serviceName, "dev")
 	if serviceConfigPath != correctPath {
 		t.Fatalf("Invalid result for pathForServiceConfig(%s): wanted %s got %s", serviceName, correctPath, serviceConfigPath)

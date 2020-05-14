@@ -153,7 +153,6 @@ func (r *Repository) StageFiles(filenames ...string) error {
 			stripLeadingSlashFromFilenames = append(stripLeadingSlashFromFilenames, filename)
 		}
 	}
-	fmt.Printf("git adding %s from repo path :%s\n", stripLeadingSlashFromFilenames, r.repoPath())
 	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, stripLeadingSlashFromFilenames...)...)
 	return err
 }

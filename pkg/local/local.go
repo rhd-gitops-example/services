@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,12 +24,8 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, env
 	copied := []string{}
 	err := source.Walk("", func(prefix, name string) error {
 		sourcePath := filepath.Join(prefix, name)
-		fmt.Printf("service name %s name %s\n", serviceName, name)
 		destPath := pathForDestServiceConfig(serviceName, name, environmentName)
-		fmt.Printf("dest path before %s\n", destPath)
 		err := dest.CopyFile(sourcePath, destPath)
-		fmt.Printf("copied from %s to %s\n", sourcePath, destPath)
-
 		if err == nil {
 			copied = append(copied, destPath)
 		}
@@ -42,7 +37,7 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, env
 // pathForDestServiceConfig defines where in a 'gitops' repository the config
 // for a given service should live.
 func pathForDestServiceConfig(serviceName, name, environmentName string) string {
-	return filepath.Join(string(filepath.Separator), "environments", environmentName, "services", serviceName, "base", name)
+	return filepath.Join("environments", environmentName, "services", serviceName, "base", name)
 }
 
 func (l *Local) Walk(_ string, cb func(prefix, name string) error) error {
