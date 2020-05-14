@@ -12,9 +12,6 @@ import (
 // Only files under /services/[serviceName]/base/config/* are copied to the destination
 //
 // Returns the list of files that were copied, and possibly an error.
-// Note this currently relies on the environment folder being in *both* the source and destination repos.
-// sourceEnvironment is
-// --env = destination environment
 func CopyService(serviceName string, source Source, dest Destination, sourceEnvironment, destinationEnvironment string) ([]string, error) {
 	// filePath defines the root folder for serviceName's config in the repository
 	// the lookup is done for the source repository
@@ -49,8 +46,6 @@ func pathForServiceConfig(serviceName, environmentName string) string {
 	if strings.Contains(environmentName, "environments") {
 		environmentName = strings.Replace(environmentName, "environments", "", -1)
 	}
-	// Todo does this defeat the point of .Join? / isn't portable, but I want a leading slash (top-level dir) don't I
 	pathForConfig := filepath.Join(string(filepath.Separator), "environments", environmentName, "services", serviceName)
-
 	return pathForConfig
 }

@@ -117,9 +117,11 @@ func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
 	if numDirs != 1 {
 		return "", err
 	}
+	// At this point we're still at the root level directory,
+	// we've omitted .git from our directory list and now we want /environments only
 	topLevelDir := topLevelDirsNoDotGit[0]
 	if topLevelDir.Name() != "environments" {
-		return "", err
+		return "", fmt.Errorf("There must be exactly one directory inside /environments")
 	}
 	lookup := path.Join(r.repoPath(), topLevelDir.Name())
 
@@ -177,7 +179,7 @@ func (r *Repository) StageFiles(filenames ...string) error {
 	return err
 }
 
-// Actually does the git commit -m with the msg & author
+// Commit does the git commit -m with the msg & author
 func (r *Repository) Commit(msg string, author *Author) error {
 	args := []string{"commit", "-m", msg}
 	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)

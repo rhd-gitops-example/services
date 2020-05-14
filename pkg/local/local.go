@@ -2,7 +2,6 @@ package local
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -17,19 +16,18 @@ type Local struct {
 
 // CopyConfig takes the name of a service and a Source local service root path to be copied to a Destination.
 //
-// Only files under /path/to/local/repo/config/* are copied to the destination /services/[serviceName]/base/config/*
+// Only files under /path/to/local/repo/config/* are copied to the destination /environments/envName//services/[serviceName]/base/config/*
 // Accepts an override target folder as well, in the event we wish to place the code at a given directory
 // This directory is prepended to the destination path
 // Returns the list of files that were copied, and possibly an error.
 func CopyConfig(serviceName string, source git.Source, dest git.Destination, overrideTargetFolder string) ([]string, error) {
 	copied := []string{}
 	err := source.Walk("", func(prefix, name string) error {
-		sourcePath := path.Join(prefix, name)
+		sourcePath := filepath.Join(prefix, name)
 		destPath := pathForDestServiceConfig(serviceName, name)
 
 		if overrideTargetFolder != "" {
-			// Todo do I need / ?
-			destPath = path.Join("/", overrideTargetFolder, destPath)
+			destPath = filepath.Join(string(filepath.Separator), overrideTargetFolder, destPath)
 		}
 		err := dest.CopyFile(sourcePath, destPath)
 		if err == nil {

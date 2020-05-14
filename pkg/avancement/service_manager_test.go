@@ -37,7 +37,7 @@ func TestPromoteWithSuccessCustomMsg(t *testing.T) {
 func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify bool, msg string) {
 	dstBranch := "test-branch"
 	author := &git.Author{Name: "Testing User", Email: "testing@example.com", Token: "test-token"}
-	devRepo, stagingRepo := mock.New("/environments/dev", "master"), mock.New("/environments", "master")
+	devRepo, stagingRepo := mock.New("/environments/dev", "master"), mock.New("/environments/staging", "master")
 	repos := map[string]*mock.Repository{
 		mustAddCredentials(t, dev, author):     devRepo,
 		mustAddCredentials(t, staging, author): stagingRepo,
@@ -62,8 +62,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 		return git.Repo(repos[url]), nil
 	}
 	devRepo.AddFiles("/services/my-service/base/config/myfile.yaml")
-	stagingRepo.AddFiles("/staging")
-
+	stagingRepo.AddFiles("")
 	err := sm.Promote("my-service", dev, staging, dstBranch, msg, keepCache)
 	if err != nil {
 		t.Fatal(err)

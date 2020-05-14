@@ -30,7 +30,7 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 ## Using environments 
 
 
-If an `environments` folder exists exist on the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `environments/<the only folder>` directory.
+If an `environments` folder exists in the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `/environments/<the only folder>` directory.
 
 Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -132,48 +133,43 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		// This would be a checkout error as the clone error gives us the above gitError instead
 		return fmt.Errorf("failed to checkout destination repository, error: %w", err)
 	}
+
+	if destination == nil {
+		// Should never happen, but if it does...
+		return fmt.Errorf("destination repository was not initialised despite being no errors")
+	}
+
 	reposToDelete = append(reposToDelete, destination)
 
 	var copied []string
 
 	if isLocal {
-		if destination != nil {
-			overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
-			if err != nil {
-				return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
-			}
-			if overrideTargetFolder == "" {
-				return fmt.Errorf("could not determine destination environment name")
-			}
-			copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder))
-			if err != nil {
-				return fmt.Errorf("failed to set up local repository: %w", err)
-			}
-		}
-	} else {
-		sourceEnvironment := ""
-		destinationEnvironment := ""
-		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
-		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for source repository, error: %s", err.Error())
-		}
-
-		// Shouldn't hit this, but if so... we don't wanna continue as that'd go panic
-		if sourceEnvironment == "" {
-			return fmt.Errorf("could not determine source environment name")
-		}
-
-		destinationEnvironment, err = destination.GetUniqueEnvironmentFolder()
-
-		if destinationEnvironment == "" {
-			return fmt.Errorf("could not determine destination environment name")
-		}
-
+		overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
 		if err != nil {
 			return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
 		}
+		if overrideTargetFolder == "" {
+			return fmt.Errorf("could not determine destination environment name")
+		}
+		copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder))
+		if err != nil {
+			return fmt.Errorf("failed to set up local repository: %w", err)
+		}
 
-		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, path.Join("environments", destinationEnvironment))
+	} else {
+
+		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for source repository, error: %w", err)
+		}
+
+		destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
+
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for destination repository, error: %w", err)
+		}
+
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, filepath.Join("environments", destinationEnvironment))
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}

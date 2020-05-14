@@ -22,10 +22,7 @@ func TestCopyService(t *testing.T) {
 
 	// They're the same because this is only testing the copying picks up all the files
 	// The promotion part is done elsewhere
-	sourceEnvironment := "dev"
-	destinationEnvironment := "dev"
-
-	copied, err := CopyService("service-a", s, d, sourceEnvironment, destinationEnvironment)
+	copied, err := CopyService("service-a", s, d, "dev", "dev")
 	if err != nil {
 		t.Fatal(err)
 	}

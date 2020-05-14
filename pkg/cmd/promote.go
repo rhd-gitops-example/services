@@ -79,13 +79,6 @@ func makePromoteCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
 
-	cmd.Flags().String(
-		envFlag,
-		"",
-		"the environment to promote from: e.g. dev, staging or prod",
-	)
-	logIfError(viper.BindPFlag(envFlag, cmd.Flags().Lookup(envFlag)))
-
 	cmd.Flags().Bool(
 		debugFlag,
 		false,

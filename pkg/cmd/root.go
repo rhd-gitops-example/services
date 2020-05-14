@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	envFlag                = "env"
 	githubTokenFlag        = "github-token"
 	branchNameFlag         = "branch-name"
 	fromFlag               = "from"
