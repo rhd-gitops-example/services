@@ -1,6 +1,7 @@
 package local
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,16 +21,16 @@ type Local struct {
 // Accepts an override target folder as well, in the event we wish to place the code at a given directory
 // This directory is prepended to the destination path
 // Returns the list of files that were copied, and possibly an error.
-func CopyConfig(serviceName string, source git.Source, dest git.Destination, overrideTargetFolder string) ([]string, error) {
+func CopyConfig(serviceName string, source git.Source, dest git.Destination, environmentName string) ([]string, error) {
 	copied := []string{}
 	err := source.Walk("", func(prefix, name string) error {
 		sourcePath := filepath.Join(prefix, name)
-		destPath := pathForDestServiceConfig(serviceName, name)
-
-		if overrideTargetFolder != "" {
-			destPath = filepath.Join(string(filepath.Separator), overrideTargetFolder, destPath)
-		}
+		fmt.Printf("service name %s name %s\n", serviceName, name)
+		destPath := pathForDestServiceConfig(serviceName, name, environmentName)
+		fmt.Printf("dest path before %s\n", destPath)
 		err := dest.CopyFile(sourcePath, destPath)
+		fmt.Printf("copied from %s to %s\n", sourcePath, destPath)
+
 		if err == nil {
 			copied = append(copied, destPath)
 		}
@@ -40,13 +41,13 @@ func CopyConfig(serviceName string, source git.Source, dest git.Destination, ove
 
 // pathForDestServiceConfig defines where in a 'gitops' repository the config
 // for a given service should live.
-func pathForDestServiceConfig(serviceName, name string) string {
-	return filepath.Join("services", serviceName, "base", name)
+func pathForDestServiceConfig(serviceName, name, environmentName string) string {
+	return filepath.Join(string(filepath.Separator), "environments", environmentName, "services", serviceName, "base", name)
 }
 
 func (l *Local) Walk(_ string, cb func(prefix, name string) error) error {
 	base := filepath.Join(l.LocalPath, "config")
-	prefix := filepath.Dir(base) + "/"
+	prefix := filepath.Dir(base) + string(filepath.Separator)
 	return filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -62,7 +63,7 @@ func (l *Local) Walk(_ string, cb func(prefix, name string) error) error {
 // GetName - we're using a directory that may not be a git repo, all we know is our path
 func (l *Local) GetName() string {
 	path := filepath.ToSlash(l.LocalPath)
-	path = strings.TrimLeft(path, "/")
-	name := strings.ReplaceAll(path, "/", "-")
+	path = strings.TrimLeft(path, string(filepath.Separator))
+	name := strings.ReplaceAll(path, string(filepath.Separator), "-")
 	return name
 }

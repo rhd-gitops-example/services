@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -146,30 +145,25 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	if isLocal {
 		overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
 		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for destination repository, error: %s", err.Error())
+			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
 		}
-		if overrideTargetFolder == "" {
-			return fmt.Errorf("could not determine destination environment name")
-		}
-		copied, err = local.CopyConfig(serviceName, localSource, destination, path.Join("environments", overrideTargetFolder))
+		copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
 		if err != nil {
 			return fmt.Errorf("failed to set up local repository: %w", err)
 		}
-
 	} else {
-
 		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
 		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for source repository, error: %w", err)
+			return fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
 		}
 
 		destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
 
 		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for destination repository, error: %w", err)
+			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
 		}
 
-		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, filepath.Join("environments", destinationEnvironment))
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, destinationEnvironment)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}

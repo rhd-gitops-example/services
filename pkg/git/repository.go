@@ -102,28 +102,7 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 // Returns an error if there was a problem in doing so (including if more than one folder found)
 // string return type for ease of mocking, callers would use .Name() anyway
 func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
-	topLevelDirs, err := r.DirectoriesUnderPath(r.repoPath())
-	var topLevelDirsNoDotGit []os.FileInfo
-	for _, dir := range topLevelDirs {
-		if dir.Name() != ".git" {
-			topLevelDirsNoDotGit = append(topLevelDirsNoDotGit, dir)
-			break
-		}
-	}
-	if err != nil {
-		return "", err
-	}
-	numDirs := len(topLevelDirsNoDotGit)
-	if numDirs != 1 {
-		return "", err
-	}
-	// At this point we're still at the root level directory,
-	// we've omitted .git from our directory list and now we want /environments only
-	topLevelDir := topLevelDirsNoDotGit[0]
-	if topLevelDir.Name() != "environments" {
-		return "", fmt.Errorf("There must be exactly one directory inside /environments")
-	}
-	lookup := path.Join(r.repoPath(), topLevelDir.Name())
+	lookup := filepath.Join(r.repoPath(), "environments")
 
 	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
 	if err != nil {

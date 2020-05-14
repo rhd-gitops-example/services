@@ -42,10 +42,6 @@ func pathValidForPromotion(serviceName, filePath, environmentName string) bool {
 
 // pathForServiceConfig defines where in a 'gitops' repository the config for a given service should live.
 func pathForServiceConfig(serviceName, environmentName string) string {
-	// This is a hack - strip environments if it was somehow provided here by the caller
-	if strings.Contains(environmentName, "environments") {
-		environmentName = strings.Replace(environmentName, "environments", "", -1)
-	}
 	pathForConfig := filepath.Join(string(filepath.Separator), "environments", environmentName, "services", serviceName)
 	return pathForConfig
 }
