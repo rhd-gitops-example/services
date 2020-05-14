@@ -13,17 +13,20 @@ import (
 )
 
 func TestCopyService(t *testing.T) {
-	s := &mockSource{localPath: "/tmp/testing"}
-	files := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
+	s := &mockSource{localPath: "/"}
+	files := []string{"environments/dev/services/service-a/base/config/my-file.yaml", "environments/dev/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
 	d := &mockDestination{}
 
-	copied, err := CopyService("service-a", s, d)
+	// They're the same because this is only testing the copying picks up all the files
+	// The promotion part is done elsewhere
+	copied, err := CopyService("service-a", s, d, "dev", "dev")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	d.assertFilesWritten(t, files)
 	if !reflect.DeepEqual(files, copied) {
 		t.Fatalf("failed to copy the files, got %#v, want %#v", copied, files)
@@ -35,24 +38,26 @@ func TestPathValidForPromotion(t *testing.T) {
 	serviceBeingPromoted := "service-name"
 	servicesNotBeingPromoted := []string{"svc", "base", "serviceName", "services"}
 	promoteTheseWhenServiceNameIsRight := []string{
-		"services/service-name/base/config/kustomization.yaml",
-		"services/service-name/base/config/deployment.yaml",
-		"services/service-name/base/config/dir/below/it/may/contain/important.yaml",
+		"environments/dev/services/service-name/base/config/kustomization.yaml",
+		"environments/dev/services/service-name/base/config/deployment.yaml",
+		"environments/dev/services/service-name/base/config/dir/below/it/may/contain/important.yaml",
 	}
 	for _, filePath := range promoteTheseWhenServiceNameIsRight {
-		if !pathValidForPromotion(serviceBeingPromoted, filePath) {
+		if !pathValidForPromotion(serviceBeingPromoted, filePath, "dev") {
 			t.Fatalf("Valid path for promotion for %s incorrectly rejected: %s", serviceBeingPromoted, filePath)
 		}
 		for _, wrongService := range servicesNotBeingPromoted {
-			if pathValidForPromotion(wrongService, filePath) {
+			if pathValidForPromotion(wrongService, filePath, "dev") {
 				t.Fatalf("Path for service %s incorrectly accepted for promotion: %s", wrongService, filePath)
 			}
 		}
 	}
 
-	// These paths should never be promoted
+	// These paths should never be promoted - no environments directory specified
+	// Remember the copy tests are for remote to remote, both need environments (so, gitops to gitops)
 	badServiceNames := []string{"svc", "badService"}
 	neverPromoteThese := []string{
+		"services/service-name/base/config/kustomization.yaml", // This used to be ok, but now isn't as not in an environments
 		"services/svc/overlays/kustomization.yaml",
 		"services/svc/kustomization.yaml",
 		"svc/base/config/deployment.yaml",
@@ -60,7 +65,7 @@ func TestPathValidForPromotion(t *testing.T) {
 	}
 	for _, badPath := range neverPromoteThese {
 		for _, badServiceName := range badServiceNames {
-			if pathValidForPromotion(badServiceName, badPath) {
+			if pathValidForPromotion(badServiceName, badPath, "") {
 				t.Fatalf("Invalid path %s for promotion of service %s incorrectly accepted", badPath, badServiceName)
 			}
 		}
@@ -69,8 +74,8 @@ func TestPathValidForPromotion(t *testing.T) {
 
 func TestPathForServiceConfig(t *testing.T) {
 	serviceName := "usefulService"
-	correctPath := "services/usefulService"
-	serviceConfigPath := pathForServiceConfig(serviceName)
+	correctPath := "environments/dev/services/usefulService"
+	serviceConfigPath := pathForServiceConfig(serviceName, "dev")
 	if serviceConfigPath != correctPath {
 		t.Fatalf("Invalid result for pathForServiceConfig(%s): wanted %s got %s", serviceName, correctPath, serviceConfigPath)
 	}
@@ -78,15 +83,15 @@ func TestPathForServiceConfig(t *testing.T) {
 
 func TestCopyServiceWithFailureCopying(t *testing.T) {
 	testError := errors.New("this is a test error")
-	s := &mockSource{localPath: "/tmp/testing"}
-	files := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
+	s := &mockSource{localPath: "/"}
+	files := []string{"/environments/dev/services/service-a/base/config/my-file.yaml", "/environments/dev/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
 	d := &mockDestination{}
 	d.copyError = testError
 
-	copied, err := CopyService("service-a", s, d)
+	copied, err := CopyService("service-a", s, d, "dev", "dev")
 	if err != testError {
 		t.Fatalf("unexpected error: got %v, wanted %v", err, testError)
 	}

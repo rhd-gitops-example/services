@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -97,6 +98,40 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 	return err
 }
 
+// Returns the single directory under the environments folder for a given repo
+// Returns an error if there was a problem in doing so (including if more than one folder found)
+// string return type for ease of mocking, callers would use .Name() anyway
+func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
+	lookup := filepath.Join(r.repoPath(), "environments")
+
+	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
+	if err != nil {
+		return "", err
+	}
+	numDirsUnderEnv := len(foundDirsUnderEnv)
+	if numDirsUnderEnv != 1 {
+		return "", fmt.Errorf("found %d directories under environments folder, wanted one. Looked under directory %s", numDirsUnderEnv, lookup)
+	}
+	foundEnvDir := foundDirsUnderEnv[0]
+	return foundEnvDir.Name(), nil
+}
+
+// Returns the directory names of those under a certain path (excluding sub-dirs)
+// Returns an error if a directory list attempt errored
+func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	var onlyDirs []os.FileInfo
+	for _, dir := range files {
+		if dir.IsDir() {
+			onlyDirs = append(onlyDirs, dir)
+		}
+	}
+	return onlyDirs, nil
+}
+
 func (r *Repository) CopyFile(src, dst string) error {
 	outputPath := r.repoPath(dst)
 	err := os.MkdirAll(path.Dir(outputPath), 0755)
@@ -106,17 +141,30 @@ func (r *Repository) CopyFile(src, dst string) error {
 	return fileCopy(src, outputPath)
 }
 
+// This does the git add command on file(s)
 func (r *Repository) StageFiles(filenames ...string) error {
-	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, filenames...)...)
+	var stripLeadingSlashFromFilenames []string
+	// Strip the leading slash here because we git add *from* the repository folder
+	// and if we don't we'll try and add / which is from the root directory on our filesystem
+	for _, filename := range filenames {
+		if filename[0] == filepath.Separator {
+			stripLeadingSlashFromFilenames = append(stripLeadingSlashFromFilenames, filename[1:])
+		} else {
+			stripLeadingSlashFromFilenames = append(stripLeadingSlashFromFilenames, filename)
+		}
+	}
+	_, err := r.execGit(r.repoPath(), nil, append([]string{"add"}, stripLeadingSlashFromFilenames...)...)
 	return err
 }
 
+// Commit does the git commit -m with the msg & author
 func (r *Repository) Commit(msg string, author *Author) error {
 	args := []string{"commit", "-m", msg}
 	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)
 	return err
 }
 
+// Does a git push origin *branch name*
 func (r *Repository) Push(branchName string) error {
 	args := []string{"push", "origin", branchName}
 	_, err := r.execGit(r.repoPath(), nil, args...)

@@ -1,7 +1,9 @@
 package mock
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -41,7 +43,7 @@ type Repository struct {
 }
 
 // New creates and returns a new git.Cache implementation that operates entirely
-// in-memory
+// in-memory.
 func New(localPath string, branches ...string) *Repository {
 	return &Repository{localPath: localPath, currentBranch: branches[0], knownBranches: branches}
 }
@@ -94,6 +96,23 @@ func (m *Repository) Commit(msg string, author *git.Author) error {
 	return m.CommitErr
 }
 
+// Not implemented
+func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
+	return nil, nil
+}
+
+func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
+	// Cheap way to do it for mocking.
+	// For environments/dev and environments/staging we want to return dev and staging.
+	// The paths have / in them from the test code itself so / here is safe
+	if len(m.files) != 1 {
+		return "", fmt.Errorf("mock tried to get unique environment folder name but found no files for this repository, or several env folders: %s", m.repoName)
+	}
+	splits := strings.Split(m.files[0], "/")
+	foundEnv := splits[1]
+	return foundEnv, nil
+}
+
 // Push fulfils the git.Repo interface.
 func (m *Repository) Push(branch string) error {
 	if m.pushedBranches == nil {
@@ -108,9 +127,8 @@ func (m *Repository) CopyFile(src, dst string) error {
 	if m.copiedFiles == nil {
 		m.copiedFiles = []string{}
 	}
-	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, path.Join(m.localPath, dst)))
+	m.copiedFiles = append(m.copiedFiles, key(m.currentBranch, src, dst))
 	return m.copyFileErr
-
 }
 
 // WriteFile fulfils the git.Repo interface.
@@ -130,9 +148,9 @@ func (m *Repository) Walk(base string, cb func(string, string) error) error {
 	if m.files == nil {
 		return nil
 	}
-
 	for _, f := range m.files {
-		if strings.HasPrefix(f, path.Join(m.localPath, base)) {
+		// Basically pathToService
+		if strings.HasPrefix(f, m.localPath) {
 			splitString := filepath.Dir(base) + "/"
 			splitPoint := strings.Index(f, splitString) + len(splitString)
 			prefix := f[:splitPoint]
@@ -174,11 +192,28 @@ func (m *Repository) AssertBranchCreated(t *testing.T, from, name string) {
 	}
 }
 
+// AssertBranchNotCreated asserts that the named branch was *not* created from the from
+// branch, using the `CheckoutAndCreate` implementation.
+func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
+	if hasString(key(from, name), m.branchesCreated) {
+		t.Fatalf("branch %s was created from %s", name, from)
+	}
+}
+
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
+	fmt.Printf("copied: %s\n", m.copiedFiles)
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
+	}
+}
+
+// AssertFileNotCopiedInBranch asserts the filename was *not* copied from and to in a
+// branch.
+func (m *Repository) AssertFileNotCopiedInBranch(t *testing.T, branch, from, name string) {
+	if hasString(key(branch, from, name), m.copiedFiles) {
+		t.Fatalf("file %s was copied from %s to branch %s", name, from, branch)
 	}
 }
 

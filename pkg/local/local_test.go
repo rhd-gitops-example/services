@@ -15,13 +15,32 @@ import (
 func TestCopyConfig(t *testing.T) {
 	s := &mockSource{localPath: "/tmp/testing"}
 	files := []string{"config/my-file.yaml", "config/this-file.yaml"}
-	copiedfiles := []string{"services/service-a/base/config/my-file.yaml", "services/service-a/base/config/this-file.yaml"}
+	copiedfiles := []string{"environments/dev/services/service-a/base/config/my-file.yaml", "environments/dev/services/service-a/base/config/this-file.yaml"}
 	for _, f := range files {
 		s.addFile(f)
 	}
 	d := &mockDestination{}
 
-	copied, err := CopyConfig("service-a", s, d)
+	copied, err := CopyConfig("service-a", s, d, "dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.assertFilesWritten(t, copiedfiles)
+	if !reflect.DeepEqual(copiedfiles, copied) {
+		t.Fatalf("failed to copy the files, got %#v, want %#v", copied, files)
+	}
+}
+
+func TestCopyConfigCanUseTargetDirectoryOverride(t *testing.T) {
+	s := &mockSource{localPath: "/tmp/testing"}
+	files := []string{"config/my-file.yaml", "config/this-file.yaml"}
+	copiedfiles := []string{"environments/staging/services/service-a/base/config/my-file.yaml", "environments/staging/services/service-a/base/config/this-file.yaml"}
+	for _, f := range files {
+		s.addFile(f)
+	}
+	d := &mockDestination{}
+
+	copied, err := CopyConfig("service-a", s, d, "staging")
 	if err != nil {
 		t.Fatal(err)
 	}

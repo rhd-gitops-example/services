@@ -107,6 +107,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	var localSource git.Source
 	var errorSource error
 	isLocal := fromLocalRepo(fromURL)
+
 	if isLocal {
 		localSource = s.localFactory(fromURL, s.debug)
 		if newBranchName == "" {
@@ -131,16 +132,38 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 		// This would be a checkout error as the clone error gives us the above gitError instead
 		return fmt.Errorf("failed to checkout destination repository, error: %w", err)
 	}
+
+	if destination == nil {
+		// Should never happen, but if it does...
+		return fmt.Errorf("destination repository was not initialised despite being no errors")
+	}
+
 	reposToDelete = append(reposToDelete, destination)
 
 	var copied []string
+
 	if isLocal {
-		copied, err = local.CopyConfig(serviceName, localSource, destination)
+		overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
+		}
+		copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
 		if err != nil {
 			return fmt.Errorf("failed to set up local repository: %w", err)
 		}
 	} else {
-		copied, err = git.CopyService(serviceName, source, destination)
+		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
+		}
+
+		destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
+
+		if err != nil {
+			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
+		}
+
+		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, destinationEnvironment)
 		if err != nil {
 			return fmt.Errorf("failed to copy service: %w", err)
 		}
@@ -149,14 +172,13 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	commitMsg := message
 	if commitMsg == "" {
 		if isLocal {
-			commitMsg = fmt.Sprintf("Promotion of service `%s` from local filesystem directory `%s`.", serviceName, fromURL)
+			commitMsg = fmt.Sprintf("Promotion of service %s from local filesystem directory %s.", serviceName, fromURL)
 		} else {
 			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
 		}
 	}
-
 	if err := destination.StageFiles(copied...); err != nil {
-		return fmt.Errorf("failed to stage files: %w", err)
+		return fmt.Errorf("failed to stage files %s: %w", copied, err)
 	}
 	if err := destination.Commit(commitMsg, s.author); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
@@ -198,7 +220,7 @@ func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Re
 	}
 	err = repo.CheckoutAndCreate(branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to checkout branch %s: %w", branch, err)
+		return nil, fmt.Errorf("failed to checkout branch %s, error: %w", branch, err)
 	}
 	return repo, nil
 }
@@ -280,6 +302,6 @@ func generateBranchForLocalSource(source git.Source) string {
 // generateDefaultCommitMsg constructs a default commit message based on the source information.
 func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
 	commit := sourceRepo.GetCommitID()
-	msg := fmt.Sprintf("Promoting service `%s` at commit `%s` from branch `%s` in `%s`.", serviceName, commit, fromBranch, from)
+	msg := fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, fromBranch, from)
 	return msg
 }

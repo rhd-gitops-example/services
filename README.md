@@ -23,9 +23,34 @@ $ ./services promote --from https://github.com/organisation/first-environment.gi
 
 If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
 
+
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
 
+
+## Using environments 
+
+
+If an `environments` folder exists in the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `/environments/<the only folder>` directory.
+
+Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
+
 ## Testing
+
+Linting should be done first (this is done on Travis, and what's good locally should be good there too)
+
+Grab the linter if you haven't already: 
+
+```shell
+GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.0
+```
+
+Then you can do:
+
+```shell
+golangci-lint run
+```
+
+Run the unit tests:
 
 ```shell
 $ go test ./...
