@@ -5,3 +5,9 @@ A Dockerfile is also provided that will pull in `oc` and copy the built plugin b
 Build it with the following command from the main `services` folder:
 
 `docker build -f plugin/Dockerfile -t <dockerusername>/oc-services-plugin-experiment .` 
+
+You can then do
+
+`docker run <dockerusername>/oc-services-plugin-experiment:latest promote`
+
+and that's using promote but from being an `oc plugin` - useful for seeing if anything breaks.
