@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: automerge-task
+spec:
+  params:
+  - name: github-config
+    type: string
+    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=gitconfig"
+  - name: github-secret
+    type: string
+    description: Name of the secret containing an access token for Github. Expects Tekton format, 'username' and 'password' keys.
+  volumes:
+  - name: gitconfig
+    configMap:
+      name: $(params.github-config)
+      items:
+        - key: gitconfig
+          path: gitconfig
+  inputs:
+    resources:
+      - name: git-source
+        type: git
+      - name: pull-request
+        type: pullRequest
+  steps:
+  - name: check-yaml
+    image: YOUR_DOCKER_HUB_ID/hub-test
+    script: |
+      #!/bin/bash
+      kubectl apply -k git-source/env --dry-run=client
+  - name: merge-pr
+    image: YOUR_DOCKER_HUB_ID/hub-test
+    volumeMounts:
+    - name: gitconfig
+      mountPath: /root
+    script: |
+      #!/bin/bash -x
+
+      cat /root/gitconfig >> $HOME/.gitconfig
+      fullPRLink=$(yq r pull-request/pr.json 'Link')
+      prURL=${fullPRLink%.diff}
+
+      cd git-source
+      hub merge $prURL
+      git push -u origin master
+
+      # Pushing the change will merge the PR. Delete its branch to tidy up. 
+      prBranch=$(yq r /workspace/pull-request/pr.json 'Head.Ref')
+      git push origin --delete $prBranch
+
+    env:
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: $(params.github-secret)
+          key: password

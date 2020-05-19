@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: pull-request
+spec:
+  type: pullRequest
+  params:
+  - name: url
+    value: YOUR_PULL_REQUEST_URL
+  secrets:
+   - fieldName: authToken
+     secretName: github-secret
+     secretKey: password

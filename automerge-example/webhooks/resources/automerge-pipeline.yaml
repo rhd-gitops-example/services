@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: automerge-pipeline
+spec:
+  params:
+  - name: github-secret
+    type: string
+  - name: github-config
+    type: string
+  - name: event-type
+    type: string
+  - name: branch-name
+    type: string
+  - name: pull-request-url
+    type: string
+  resources: 
+  - name: source-repo
+    type: git
+  tasks:
+  - name: test-and-automerge
+    taskRef:
+      name: automerge-task
+    resources:
+      inputs:
+      - name: git-source
+        resource: source-repo
+    params:
+    - name: github-secret
+      value: $(params.github-secret)
+    - name: github-config
+      value: $(params.github-config)
+    - name: event-type
+      value: $(params.event-type)
+    - name: branch-name
+      value: $(params.branch-name)
+    - name: pull-request-url
+      value: $(params.pull-request-url)

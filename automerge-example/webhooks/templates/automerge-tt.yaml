@@ -1,0 +1,65 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: automerge-pipeline-template
+  namespace: tekton-pipelines
+spec:
+  params:
+  - name: pullrequesturl
+    description: The pull request url
+    type: string
+    default: notApplicable
+  - name: github-configmap-name
+    description: Name of the configmap that stores the github username and password to be used in commits. 
+    type: string
+    default: promote-configmap
+  - name: github-secretname
+    description: The git secret name
+    default: github-secret
+    type: string
+  - name: github-secret-keyname
+    description: The git secret key name
+    default: accessToken
+    type: string
+  - name: gitrepositoryurl
+    description: The url of the Git repository
+  - name: event-type
+    description: push, pull_request
+  - name: branch-name
+    description: The branch name associated with push events
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineResource
+      metadata:
+        name: gitops-repo-$(uid)
+      spec:
+        params:
+        - name: revision
+          value: master
+        - name: url
+          value: $(params.gitrepositoryurl)
+        type: git
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        name: automerge-pipelinerun-$(uid)
+      spec:
+        params:
+        - name: github-config
+          value: $(params.github-configmap-name)
+        - name: github-secret
+          value: $(params.github-secretname)
+        - name: branch-name
+          value: $(params.branch-name)
+        - name: event-type
+          value: $(params.event-type)
+        - name: pull-request-url
+          value: $(params.pullrequesturl)
+        serviceAccountName: YOUR_TEKTON_SERVICE_ACCOUNT
+        pipelineRef:
+          name: automerge-pipeline
+        resources:
+          - name: source-repo
+            resourceRef:
+              name: gitops-repo-$(uid)
+    
