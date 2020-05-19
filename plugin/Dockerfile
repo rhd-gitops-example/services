@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu AS oc-base
 
 # Install curl
 RUN apt-get update 
@@ -22,4 +22,6 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal
 RUN microdnf install git
 WORKDIR /root/
 COPY --from=build /go/build/services /usr/local/bin/oc-services
-ENTRYPOINT ["/usr/local/bin/oc services"]
+COPY --from=oc-base /usr/local/bin/oc /usr/local/bin/
+
+ENTRYPOINT ["/usr/local/bin/oc"]
