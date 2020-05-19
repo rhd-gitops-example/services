@@ -87,3 +87,13 @@ See the [tekton-example](./tekton-example/README.md) directory for more on using
 ## Release process
 
 When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Linux, and Mac automatically.
+
+## Experimental plugin section
+
+Inside of the `plugin` folder you'll see documentation and other files related to using the `services` binary as a plugin to `oc`. This has been tested with the following version on OpenShift 4.3:
+
+```
+Client Version: openshift-clients-4.3.13-202004121622
+Server Version: 4.3.13
+Kubernetes Version: v1.16.2
+```
