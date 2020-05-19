@@ -8,6 +8,6 @@ Build it with the following command from the main `services` folder:
 
 You can then do
 
-`docker run <dockerusername>/oc-services-plugin-experiment:latest services promote`
+`docker run -e GITHUB_TOKEN=<mytoken> <dockerusername>/oc-services-plugin-experiment:latest services promote`
 
 and that's using `promote` but from being an `oc plugin` - useful for seeing if anything breaks.
