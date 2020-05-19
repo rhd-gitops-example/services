@@ -8,6 +8,8 @@ Build it with the following command from the main `services` folder:
 
 You can then do
 
-`docker run -e GITHUB_TOKEN=<mytoken> <dockerusername>/oc-services-plugin-experiment:latest services promote`
+`docker run -e GITHUB_TOKEN=<mytoken> <dockerusername>/oc-services-plugin-experiment:latest services promote --from https://github.com/myorg/myrepo --to https://github.com/myorg/myotherrepo --service myservicename --commit-name=<mygitname> --commmit-email=<mygitemail>`
+
+But you need Git details too
 
 and that's using `promote` but from being an `oc plugin` - useful for seeing if anything breaks.
