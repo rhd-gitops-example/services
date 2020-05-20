@@ -14,7 +14,6 @@ Creation of a TaskRun (using `promote-run.yaml`) will then further promote from 
 - `service-promote-pipeline.yaml`: Creates a pipeline that executes `build-task.yaml` and `service-promote.yaml`
 - `promote.yaml`: Creates a pull request from one repository to another repository
 - `build-task.yaml`: This task builds a git source into a docker image and pushes to a docker registry
-- `gitconfig`: Data file for the configmap - includes a GitHub user ID and email address
 
 ## Pre-requisites
 
@@ -47,13 +46,6 @@ kubectl apply -f resources
 ```shell 
 kubectl apply -f templates
 ```
-- Edit `gitconfig` to contain your GitHub username and email address
-
-- Create a configmap:
-```shell
-kubectl create configmap promote-configmap --from-file=gitconfig
-```
-This will store your GitHub username and email address in key-value pairs that can be used in the PipelineRun. 
 
 ## Execute Pipeline
 
@@ -61,7 +53,7 @@ The PipelineRun you will create is designed to build your microservice from its 
 
 - To create the PipelineRun, use:
 ```shell
-tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitID=v1 --param github-secret=promote-secret --param github-config=promote-configmap --param to=https://github.com/<github username>/<github repo>.git --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
+tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitID=v1 --param github-secret=promote-secret --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param to=https://github.com/<github username>/<github repo>.git --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
 ```
 
 - This creates a PipelineRun that executes the `service-promote-pipeline`, which will build the code and promote it to a repository you have specified
@@ -74,7 +66,7 @@ Optionally, you can run a subsequent promote from one GitOps repository to anoth
 -  To do this second promote, you will need to create a TaskRun that executes a task promoting from a testing repository to a production repository
 - To create the TaskRun, use:
 ```shell
-tkn task start promote --param github-secret=promote-secret--param from=https://github.com/<github username>/<github repo> --param from=https://github.com/<github username>/<github repo>.git --param github-config=promote-configmap --param service=service-a -s demo --showlog
+tkn task start promote --param github-secret=promote-secret--param from=https://github.com/<github username>/<github repo> --param from=https://github.com/<github username>/<github repo>.git --param commit-name=<mygithubname> --param commit-email=<mygithubmail> --param service=service-a -s demo --showlog
 ```
 This will start the TaskRun and output its logs, and you can also view its progress in the Tekton Dashboard.
 
