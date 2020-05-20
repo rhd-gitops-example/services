@@ -251,8 +251,8 @@ func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commi
 	}
 
 	u, _ := url.Parse(toURL)
-	// take out ".git" at the end
-	pr, _, err := client.PullRequests.Create(ctx, u.Path[1:len(u.Path)-4], prInput)
+	pathToUse := strings.TrimPrefix(strings.TrimSuffix(u.Path, ".git"), "/")
+	pr, _, err := client.PullRequests.Create(ctx, pathToUse, prInput)
 	return pr, err
 }
 
