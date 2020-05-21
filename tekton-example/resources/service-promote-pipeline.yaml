@@ -69,7 +69,7 @@ spec:
     - name: commit-name
       value: $(params.commit-name)
     - name: commit-email
-      value: $(params.commit-name)
+      value: $(params.commit-email)
 
 
 

@@ -16,27 +16,19 @@ spec:
   - name: service
     type: string
     description: service name to be promoted
-  - name: github-config
+  - name: commit-name
     type: string
-    description: configmap name of the gitconfig file that has user name, user e-mail
-  volumes:
-  - name: gitconfig
-    configMap:
-      name: $(params.github-config)
-      items:
-        - key: gitconfig
-          path: gitconfig
+    description: the GitHub username to username
+  - name: commit-email
+    type: string
+    description: the GitHub email to use
   steps:
   - name: promote
     image: quay.io/redhat-developer/gitops-cli
     imagePullPolicy: Always
-    volumeMounts:
-    - name: gitconfig
-      mountPath: /root
     script: |
       #!/bin/sh
-      cp /root/gitconfig $HOME/.gitconfig
-      services promote --from $(params.from) --to $(params.to) --service $(params.service) 
+      services promote --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from $(params.from) --to $(params.to) --service $(params.service)
     env:
     - name: GITHUB_TOKEN
       valueFrom:

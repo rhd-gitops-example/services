@@ -53,8 +53,11 @@ The PipelineRun you will create is designed to build your microservice from its 
 
 - To create the PipelineRun, use:
 ```shell
-tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitID=v1 --param github-secret=promote-secret --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param to=https://github.com/<github username>/<github repo>.git --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
+tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitId=v1 --param github-secret=promote-secret --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param to=https://github.com/<github username>/<github repo>.git --param service=promote-demo --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
 ```
+
+This example promotes from the `promote-demo` repository, containing a service with the same name.
+
 
 - This creates a PipelineRun that executes the `service-promote-pipeline`, which will build the code and promote it to a repository you have specified
 - The logs will be outputted to your console, and you can also view its progress in the Tekton Dashboard.
