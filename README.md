@@ -1,16 +1,66 @@
 # services [![Build Status](https://travis-ci.org/rhd-gitops-example/services.svg?branch=master)](https://travis-ci.org/rhd-gitops-example/services) [![Docker Repository on Quay](https://quay.io/repository/redhat-developer/gitops-cli/status "Docker Repository on Quay")](https://quay.io/repository/redhat-developer/gitops-cli)
 
-A tool for promoting between GitHub repositories.
+'GitOps' emphasises the use of Git repositories as sources of truth. Changes to a system should be made by changing its associated Git repository, rather than by operating directly on that system. This tool works with GitOps repositories that follow [this specification](https://github.com/rhd-gitops-example/docs/tree/master/model#gitops-repository). If provides a way to promote versions of files between environments, by operating on their associated Git repositories.
 
-This is a pre-alpha PoC for promoting versions of files between environments, represented as repositories.
+## Overview
 
-## Building
+At a high level the `services promote` command currently:
 
-You need Go version 1.14 to build this project.
+- git clones the source and target repositories into `~/.promotion/cache`
+- creates a branch
+- checks out the branch
+- copies the relevant files from the cloned source into the cloned target
+- pushes the cloned target
+- creates a PR from the new branch in the target to master in the target
 
-```shell
-$ go build ./cmd/services
+See the [tekton-example](./tekton-example/README.md) directory for more on using the `promote` task with Tekton. See [automerge](./automerge/README.md) for some suggestions as to how promotion PullRequests may be merged automatically where appropriate.
+
+## Installation
+
+Built versions of the tool can be obtained [here](https://github.com/rhd-gitops-example/services/releases). See [here](DEVELOPMENT.md) for instructions on building it yourself. The binary is also available as an OCI image at `quay.io/redhat-developer/gitops-cli`.
+
+## Usage
+
+`services` currently offers one verb: `promote`. This packages up the tasks required to take the version of a [service](https://github.com/rhd-gitops-example/docs/tree/master/model#gitops-repository) from one environment and deploy it into another. 
+
+### Promotion uses Pull Requests in GitHub and Merge Requests in GitLab
+
+A key point about GitOps in general is that it incorporates the ideas of workflow and approval. The `promote` task creates Pull Requests in GitHub, or Merge Requests in GitLab. In the simplest case, these will often require manual approval by someone other than the author of the change. This approval mechanism is part of how GitOps enables the idea of governance: it can be used to enforce rules about who can approve change, and under what circumstances. Thus `promote` doesn't cause deployments to happen: it creates Pull or Merge Requests. In due course these result in `git merge` operations within the associated repository, which may then cause deployment changes via automation.
+
+### Types of promotion: 'Remote' vs 'Local'
+
+`promote` currently handles two different scenarios. You may hear us refer to these in shorthand as 'remote' and 'local'. In the 'remote' scenario, a specific version of a service is deployed in environment A and we want to promote it into environment B. Thus we might say, "promote my-service from dev to staging." The same version of my-service will be running in both environments on the eventual completion of the whole promotion worklow - i.e. once the Pull Request has been merged and the implied deployment changes completed. We call this 'remote' because the promotion is happening between two Git repositories both remote from the machine running 'promote'. Both git repositories are referred to by https:// URLs.
+
+We often think of promotion as a linear flow, such as 'from dev to staging to production.' The second scenario provides a means for services to enter this flow - it's about how services can get into 'dev' at all. So how can services get into 'dev'? One option is via [`odo pipelines service add`](https://github.com/rhd-gitops-example/docs/tree/master/commands/service). Under this model, having created a new service in a new source repository, a command is issued that generates a new local version of the GitOps repository, from which a pull request towards 'dev' may be manually prepared. Another option, which 'local promotion' is there to support, requires a new service, in its source repository, to contain a basic version of the kubernetes yaml that will be used to deploy it. 'Local' promotion can then be used by automation that is building the microservice, to automatically 'promote' it into the 'dev' environment. We call this 'local' promotion because the yaml in question is coming from a local directory, for example within a running Tekton build. 
+
+### Syntax
+
+```sh
+services promote --help
+promote from one environment to another
+
+Usage:
+  services promote [flags]
+
+Flags:
+      --cache-dir string         where to cache Git checkouts (default "~/.promotion/cache")
+      --commit-email string      the email to use for commits when creating branches
+      --commit-message string    the msg to use on the resultant commit and pull request
+      --commit-name string       the name to use for commits when creating branches
+      --debug                    additional debug logging output
+      --from string              source Git repository
+  -h, --help                     help for promote
+      --insecure-skip-verify     Insecure skip verify TLS certificate
+      --keep-cache               whether to retain the locally cloned repositories in the cache directory
+      --repository-type string   the type of repository: github, gitlab or ghe (default "github")
+      --service string           service name to promote
+      --to string                destination Git repository
+
+Global Flags:
+      --github-token string   oauth access token to authenticate the request
 ```
+
+Any of these arguments may be provided as environment variables, using all upper case and replacing `-` with `_`. Hence you can set CACHE_DIR, COMMIT_EMAIL, etc.
 
 ## Running
 
@@ -21,75 +71,21 @@ $ export GITHUB_TOKEN=<paste in GitHub access token>
 $ ./services promote --from https://github.com/organisation/first-environment.git --to https://github.com/organisation/second-environment.git --service service-a --commit-name <User to commit as> --commit-email <Email to commit as>
 ```
 
+If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
+
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
 
-
-## Using environments 
-
+## Using environments
 
 If an `environments` folder exists in the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `/environments/<the only folder>` directory.
 
 Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
 
-## Testing
-
-Linting should be done first (this is done on Travis, and what's good locally should be good there too)
-
-Grab the linter if you haven't already: 
-
-```shell
-GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.0
-```
-
-Then you can do:
-
-```shell
-golangci-lint run
-```
-
-Run the unit tests:
-
-```shell
-$ go test ./...
-```
-
-To run the complete integration tests, including pushing to the Git repository:
-
-```shell
-$ TEST_GITHUB_TOKEN=<a valid github auth token> go test ./...
-```
-
-Note that the tests in pkg/git/repository_test.go will clone and manipulate a
-remote Git repository locally.
-
-To run a particular test: for example, 
-
-```shell
-go test ./pkg/git -run TestCopyServiceWithFailureCopying
-```
-
-## Getting started
-
-At a high level the services command currently:
-
-- git clones the source and target repositories into ~/.promotion/cache
-- creates a branch
-- checks out the branch
-- copies the relevant files from the cloned source into the cloned target
-- pushes the cloned target
-- creates a PR from the new branch in the target to master in the target
-
-See the [tekton-example](./tekton-example/README.md) directory for more on using the `promote` task with Tekton. See [automerge](./automerge/README.md) for some suggestions as to how promotion PullRequests may be merged automatically where appropriate.
-
-## Release process
-
-When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Linux, and Mac automatically.
-
 ## Experimental plugin section
 
 Inside of the `plugin` folder you'll see documentation and other files related to using the `services` binary as a plugin to `oc`. This has been tested with the following version on OpenShift 4.3:
 
-```
+```yaml
 Client Version: openshift-clients-4.3.13-202004121622
 Server Version: 4.3.13
 Kubernetes Version: v1.16.2
