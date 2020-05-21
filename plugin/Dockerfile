@@ -23,9 +23,4 @@ RUN microdnf install git
 WORKDIR /root/
 COPY --from=build /go/build/services /usr/local/bin/oc-services
 COPY --from=oc-base /usr/local/bin/oc /usr/local/bin/
-# For easy testing - you would docker run -it mydockerusername/oc-services-plugin-experiment:latest
-# and once inside do: 
-# export GITHUB_TOKEN=foo
-# oc services promote --from https://github.com/myorg/myrepo --to https://github.com/myorg/myrepo --service promote-demo --commit-name=myname --commit-email=myemail
-# ENTRYPOINT ["/bin/bash"]
 ENTRYPOINT ["/usr/local/bin/oc"]

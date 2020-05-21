@@ -4,10 +4,7 @@ metadata:
   name: automerge-task
 spec:
   params:
-  - name: github-config
-    type: string
-    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitconfig. It can be created by "kubectl create configmap <configmap name> --from-file=gitconfig"
-  - name: github-secret
+ - name: github-secret
     type: string
     description: Name of the secret containing an access token for Github. Expects Tekton format, 'username' and 'password' keys.
   - name: event-type
@@ -19,13 +16,6 @@ spec:
   - name: pull-request-url
     type: string
     description: The URL of the pull request, where applicable
-  volumes:
-  - name: gitconfig
-    configMap:
-      name: $(params.github-config)
-      items:
-        - key: gitconfig
-          path: gitconfig
   inputs:
     resources:
       - name: git-source
@@ -38,9 +28,6 @@ spec:
       kubectl apply -k git-source/env --dry-run=client
   - name: merge-pr
     image: YOUR_DOCKER_HUB_ID/hub-test
-    volumeMounts:
-    - name: gitconfig
-      mountPath: /root
     script: |
       #!/bin/bash -x
 
@@ -52,12 +39,11 @@ spec:
           echo "do nothing"
         fi
       elif [ $(params.event-type) = "pull_request" ]; then
-      
-        cat /root/gitconfig >> $HOME/.gitconfig
         # GHE requires some extra config
         # Replace `YOUR_GHE` with your GitHub Enterprise domain e.g. `github.ibm.com`
         git config --global --add hub.host YOUR_GHE
-
+        git config --global user.name $(params.commit-name)
+        git config --global user.email $(params.commit-email)
         cd git-source
         export HUB_VERBOSE=true
         hub merge $(params.pull-request-url)

@@ -18,13 +18,6 @@ This example is for more advanced users. Start with the [tekton-example](../tekt
 
 Our samples currently work with GitHub. They use the `hub` CLI to create a merge commit that when pushed, will merge the associated Pull Request. See [here](https://hub.github.com/hub-merge.1.html) for more details.
 
-## gitconfig
-
-Since we are creating git commits within the Tekton tasks, we need to know the username and email address to associate with them, as in our ['tekton-example'](../tekton-example/README.md). So, edit `gitconfig` and
-
-```sh
-kubectl create configmap promoteconfigmap --from-file=gitconfig
-```
 
 ## Dockerfile
 
@@ -84,7 +77,7 @@ Set up your Service Account and Secret as per the guide above. In this case you 
 - A ServiceAccount configured for use by Tekton.
 - A Tekton-compatible Secret patched onto that that ServiceAccount containing your GitHub token.
 
-This secret is used in two related ways. We check the source repository out using a Tekton Git PipelineResource. This sets up `~/.gitconfig` with the credentials needed for `git push` to work. It gets these credentials from the `accessToken` field of the relevant secret patched onto the ServiceAccount running the Tekton Task. We then extract the same field and export it into the `GITHUB_TOKEN` environment variable to make `hub merge` work. Instructions for creating this secret are in the Getting Started document linked above. You should have resources of the form, 
+This secret is used in two related ways. We check the source repository out using a Tekton Git PipelineResource. This sets up Git with the credentials needed for `git push` to work. It gets these credentials from the `accessToken` field of the relevant secret patched onto the ServiceAccount running the Tekton Task. We then extract the same field and export it into the `GITHUB_TOKEN` environment variable to make `hub merge` work. Instructions for creating this secret are in the Getting Started document linked above. You should have resources of the form, 
 
 ```yaml
 ---
