@@ -67,9 +67,9 @@ This example promotes from the `promote-demo` repository, containing a service w
 Optionally, you can run a subsequent promote from one GitOps repository to another (e.g staging to prod) after merging the pull request on your first GitOps repository. For this you will need a third repository, and for this you can fork: https://github.com/rhd-gitops-example/gitops-example-staging
 
 -  To do this second promote, you will need to create a TaskRun that executes a task promoting from a testing repository to a production repository
-- To create the TaskRun, use:
+- To create the TaskRun (again this uses a service called `promote-demo`), use:
 ```shell
-tkn task start promote --param github-secret=promote-secret--param from=https://github.com/<github username>/<github repo> --param from=https://github.com/<github username>/<github repo>.git --param commit-name=<mygithubname> --param commit-email=<mygithubmail> --param service=service-a -s demo --showlog
+tkn task start promote --param github-secret=promote-secret --param from=https://github.com/<yourorg>/<yourdevrepo>.git --param to=https://github.com/<yourorg>/<yourstagingrepo>.git --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param service=promote-demo -s demo --showlog
 ```
 This will start the TaskRun and output its logs, and you can also view its progress in the Tekton Dashboard.
 
