@@ -65,10 +65,12 @@ kubectl apply -f standalone/resources
 kubectl apply -f standalone/templates
 ```
 
-Finally start the Tekton pipeline:
+Create or modify an existing ServiceAccount to use your `github-secret` (hint, you can use the provided `sa.yaml` file: this creates `my-sa` which will be used in the `tkn` command)
+
+Finally start the Tekton pipeline referencing your ServiceAccount:
 
 ```sh
-tkn pipeline start automerge-pipeline -r source-repo=gitops-repo -r pr=pull-request -p github-config=promoteconfigmap -p github-secret=github-secret --showlog
+tkn pipeline start automerge-pipeline -r source-repo=gitops-repo -r pr=pull-request -p github-config=promoteconfigmap -p github-secret=github-secret --showlog -s my-sa
 ```
 
 The pipeline will do a dry run to test that the yaml in the Pull Request is good, then merge the Pull Request and delete the branch associated with it.

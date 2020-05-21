@@ -28,7 +28,7 @@ spec:
     image: YOUR_DOCKER_HUB_ID/hub-test
     script: |
       #!/bin/bash
-      kubectl apply -k git-source/env --dry-run=client
+      kubectl apply -k git-source/environments/dev/env --dry-run=client
   - name: merge-pr
     image: YOUR_DOCKER_HUB_ID/hub-test
     volumeMounts:
