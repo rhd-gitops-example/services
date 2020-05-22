@@ -203,7 +203,6 @@ func (m *Repository) AssertBranchNotCreated(t *testing.T, from, name string) {
 // AssertFileCopiedInBranch asserts the filename was copied from and to in a
 // branch.
 func (m *Repository) AssertFileCopiedInBranch(t *testing.T, branch, from, name string) {
-	fmt.Printf("copied: %s\n", m.copiedFiles)
 	if !hasString(key(branch, from, name), m.copiedFiles) {
 		t.Fatalf("file %s was not copied from %s to branch %s", name, from, branch)
 	}

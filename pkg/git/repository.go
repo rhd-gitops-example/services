@@ -158,9 +158,30 @@ func (r *Repository) StageFiles(filenames ...string) error {
 }
 
 // Commit does the git commit -m with the msg & author
+// after first running git config commands for the user.name and user.email
+// these are intentionally *not* global settings because we don't want to touch a user's $HOME/.gitconfig
+// This means the settings only apply inside of our local repository cache.
 func (r *Repository) Commit(msg string, author *Author) error {
+	_, err := r.execGit(r.repoPath(), envFromAuthor(author), "status")
+	if err != nil {
+		return fmt.Errorf("could not set name, err: %w", err)
+	}
+
+	command := fmt.Sprintf("config user.name \"%s\"", author.Name)
+	commandAsArgs := strings.Split(command, " ")
+	_, err = r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
+	if err != nil {
+		return fmt.Errorf("could not set name, err: %w", err)
+	}
+	command = fmt.Sprintf("config user.email \"%s\"", author.Email)
+	commandAsArgs = strings.Split(command, " ")
+	_, err = r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
+	if err != nil {
+		return fmt.Errorf("could not set email, err: %w", err)
+	}
+
 	args := []string{"commit", "-m", msg}
-	_, err := r.execGit(r.repoPath(), envFromAuthor(author), args...)
+	_, err = r.execGit(r.repoPath(), envFromAuthor(author), args...)
 	return err
 }
 
@@ -214,6 +235,7 @@ func envFromAuthor(a *Author) []string {
 	sf := func(k, v string) string {
 		return fmt.Sprintf("%s=%s", k, v)
 	}
+
 	return []string{
 		sf("GIT_AUTHOR_NAME", a.Name),
 		sf("GIT_AUTHOR_EMAIL", a.Email)}

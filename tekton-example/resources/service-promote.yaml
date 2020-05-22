@@ -11,37 +11,29 @@ spec:
     description: name of the secret that contains the GitHub access token, the access token must be in a token key.
   - name: from
     type: string
-    description: github repository url to be promoted from
+    description: GitHub repository URL to be promoted from
     default: /workspace/repo
   - name: to
     type: string
-    description: github repository url to be promoted to
+    description: GitHub repository URL to be promoted to
   - name: service
     type: string
     description: service name to be promoted
-  - name: github-config
+  - name: commit-name
     type: string
-    description: configmap name of the gitconfig file that has user name and e-mail
-  volumes:
-  - name: gitconfig
-    configMap:
-      name: $(params.github-config)
-      items:
-        - key: gitconfig
-          path: gitconfig
+    description: the GitHub username to username
+  - name: commit-email
+    type: string
+    description: the GitHub email to use
   steps:
   - name: promote
     image: quay.io/redhat-developer/gitops-cli
     imagePullPolicy: Always
-    volumeMounts:
-    - name: gitconfig
-      mountPath: /root
     script: |
       #!/bin/sh -x
-      cp /root/gitconfig $HOME/.gitconfig
       cd $(params.from)
       gitCommit=$(git rev-parse --short HEAD)
-      services promote --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
+      services promote  --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
     env:
     - name: GITHUB_TOKEN
       valueFrom:

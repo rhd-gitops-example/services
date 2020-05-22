@@ -22,9 +22,12 @@ spec:
   - name: service
     type: string
     description: service name to be promoted
-  - name: github-config
+  - name: commit-name
     type: string
-    description: configmap name of the gitconfig file that has user name, user e-mail.  The key name is gitco
+    description: the GitHub name to use on the commit
+  - name: commit-email
+    type: string
+    description: the GitHub email to use on the commit
   resources: 
   - name: git-source
     type: git
@@ -63,8 +66,10 @@ spec:
       value: $(params.to)
     - name: service
       value: $(params.service)
-    - name: github-config
-      value: $(params.github-config)
+    - name: commit-name
+      value: $(params.commit-name)
+    - name: commit-email
+      value: $(params.commit-email)
 
 
 

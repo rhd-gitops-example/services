@@ -21,9 +21,6 @@ $ export GITHUB_TOKEN=<paste in GitHub access token>
 $ ./services promote --from https://github.com/organisation/first-environment.git --to https://github.com/organisation/second-environment.git --service service-a --commit-name <User to commit as> --commit-email <Email to commit as>
 ```
 
-If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
-
-
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
 
 
@@ -87,3 +84,13 @@ See the [tekton-example](./tekton-example/README.md) directory for more on using
 ## Release process
 
 When a new tag is pushed with the `v` prefix, a GitHub release will be created with binaries produced for 64-bit Linux, and Mac automatically.
+
+## Experimental plugin section
+
+Inside of the `plugin` folder you'll see documentation and other files related to using the `services` binary as a plugin to `oc`. This has been tested with the following version on OpenShift 4.3:
+
+```
+Client Version: openshift-clients-4.3.13-202004121622
+Server Version: 4.3.13
+Kubernetes Version: v1.16.2
+```
