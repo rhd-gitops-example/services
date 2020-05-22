@@ -159,14 +159,16 @@ func (r *Repository) StageFiles(filenames ...string) error {
 
 // Commit does the git commit -m with the msg & author
 // after first running git config commands for the user.name and user.email
+// these are intentionally *not* global settings because we don't want to touch a user's $HOME/.gitconfig
+// This means the settings only apply inside of our local repository cache.
 func (r *Repository) Commit(msg string, author *Author) error {
-	command := fmt.Sprintf("config --global user.name \"%s\"", author.Name)
+	command := fmt.Sprintf("config user.name \"%s\"", author.Name)
 	commandAsArgs := strings.Split(command, " ")
 	_, err := r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
 	if err != nil {
 		return fmt.Errorf("could not set name, err: %w", err)
 	}
-	command = fmt.Sprintf("config --global user.email \"%s\"", author.Email)
+	command = fmt.Sprintf("config user.email \"%s\"", author.Email)
 	commandAsArgs = strings.Split(command, " ")
 	_, err = r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
 	if err != nil {
