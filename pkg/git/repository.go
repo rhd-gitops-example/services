@@ -162,9 +162,14 @@ func (r *Repository) StageFiles(filenames ...string) error {
 // these are intentionally *not* global settings because we don't want to touch a user's $HOME/.gitconfig
 // This means the settings only apply inside of our local repository cache.
 func (r *Repository) Commit(msg string, author *Author) error {
+	_, err := r.execGit(r.repoPath(), envFromAuthor(author), "status")
+	if err != nil {
+		return fmt.Errorf("could not set name, err: %w", err)
+	}
+
 	command := fmt.Sprintf("config user.name \"%s\"", author.Name)
 	commandAsArgs := strings.Split(command, " ")
-	_, err := r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
+	_, err = r.execGit(r.repoPath(), envFromAuthor(author), commandAsArgs...)
 	if err != nil {
 		return fmt.Errorf("could not set name, err: %w", err)
 	}
