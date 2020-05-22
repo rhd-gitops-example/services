@@ -33,7 +33,34 @@ A key point about GitOps in general is that it incorporates the ideas of workflo
 
 We often think of promotion as a linear flow, such as 'from dev to staging to production.' The second scenario provides a means for services to enter this flow - it's about how services can get into 'dev' at all. So how can services get into 'dev'? One option is via [`odo pipelines service add`](https://github.com/rhd-gitops-example/docs/tree/master/commands/service). Under this model, having created a new service in a new source repository, a command is issued that generates a new local version of the GitOps repository, from which a pull request towards 'dev' may be manually prepared. Another option, which 'local promotion' is there to support, requires a new service, in its source repository, to contain a basic version of the kubernetes yaml that will be used to deploy it. 'Local' promotion can then be used by automation that is building the microservice, to automatically 'promote' it into the 'dev' environment. We call this 'local' promotion because the yaml in question is coming from a local directory, for example within a running Tekton build. 
 
-### Syntax
+### Using environments
+
+If an `environments` folder exists in the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `/environments/<the only folder>` directory.
+
+Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
+
+## Example 1: Promote a service 'service-a' from 'dev' to 'staging'
+
+You'll need a GitHub token to test this out.
+
+```sh
+export GITHUB_TOKEN=<paste in GitHub access token>
+./services promote --from https://github.com/organisation/dev.git --to https://github.com/organisation/staging.git --service service-a --commit-name <User to commit as> --commit-email <Email to commit as>
+```
+
+If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
+
+This will _copy_ all files under `/environments/<env-name>/services/service-a/base/config/*` in `dev` to `staging`, commit and push, and open a PR for the change.
+
+### Example 2: Promote (or 'publish') a microservice into 'dev'
+
+```sh
+services promote --from /workspace/service-b --to https://my.git/org/dev --service service-b --commit-message "Publish service-b into dev"
+```
+
+This will again raise a Pull Request, copying the local files `/workspace/service-b/config/*` to https://my.git/org/dev, into `/environments/<env-name>/services/service-b/base/config/*`
+
+## CLI Reference
 
 ```sh
 services promote --help
@@ -60,26 +87,27 @@ Global Flags:
       --github-token string   oauth access token to authenticate the request
 ```
 
-Any of these arguments may be provided as environment variables, using all upper case and replacing `-` with `_`. Hence you can set CACHE_DIR, COMMIT_EMAIL, etc.
+This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change. Any of these arguments may be provided as environment variables, using all upper case and replacing `-` with `_`. Hence you can set CACHE_DIR, COMMIT_EMAIL, etc.
 
-## Running
+- `--cache-dir` : path on the local filesystem in which Git checkouts will be cached.
+- `--commit-email` : Git commits require an associated email address and username. This is the email address. May be set via ~/.gitconfig.
+- `--commit-message` : use this to override the commit message which will otherwise be generated automatically.
+- `--commit-name` : The other half of `commit-email`. Both must be set.
+- `--debug` : prints extra debug output if true.
+- `--from` : an https URL to a GitOps repository for 'remote' cases, or a path to a Git clone of a microservice for 'local' cases.
+- `--help`: prints the above text if true.
+- `--insecure-skip-verify` : skip TLS cerificate verification if true. Do not set this to true unless you know what you are doing.
+- `--keep-cache` : `cache-dir` is deleted unless this is set to true. Keeping the cache will often cause further promotion attempts to fail. This flag is mostly used along with `--debug` when investigating failure cases. 
+- `--repository-type` : the type of repository: github, gitlab or ghe (default "github")
+- `--service` : the destination path for promotion is `/environments/<env-name>/services/<service-name>/base/config/`. This argument defines `service-name` in that path.
+- `--to`: an https URL to the destination GitOps repository.
 
-You'll need a GitHub token to test this out.
+### Troubleshooting
 
-```shell
-$ export GITHUB_TOKEN=<paste in GitHub access token>
-$ ./services promote --from https://github.com/organisation/first-environment.git --to https://github.com/organisation/second-environment.git --service service-a --commit-name <User to commit as> --commit-email <Email to commit as>
-```
-
-If the `commit-name` and `commit-email` are not provided, it will attempt to find them in `~/.gitconfig`, otherwise it will fail.
-
-This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change.
-
-## Using environments
-
-If an `environments` folder exists in the GitOps repository you are promoting into, and that only has one folder, the files will be copied into the destination repository's `/environments/<the only folder>` directory.
-
-Future support is planned for an `--env` like flag which will allow us to promote from/to different repositories with multiple environments.
+- Authentication and authorisation failures: ensure that GITHUB_TOKEN is set and has the necessary permissions.
+- 'Failure to commit, Error 128'. Errors of this form are often caused by a failure to set the `commit-email` and `commmit-name` parameters.
+- 'Nothing to commit'. If there's no difference between the state of `--from` and `--to` then there's no change to made, and no Git commit can be created. 
+- Remote branch is created but no Pull Request. Again check GITHUB_TOKEN, and that `--repository-type` is set correctly.
 
 ## Experimental plugin section
 
@@ -89,4 +117,3 @@ Inside of the `plugin` folder you'll see documentation and other files related t
 Client Version: openshift-clients-4.3.13-202004121622
 Server Version: 4.3.13
 Kubernetes Version: v1.16.2
-```
