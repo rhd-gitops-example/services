@@ -6,14 +6,14 @@ Creation of a TaskRun (using `promote-run.yaml`) will then further promote from 
 
 ## Template Files
 
-- `auth.yaml`: Creates secrets for a GitHub repository and Docker registry, an access token for the GitHub repository and the ServiceAccount
+- `auth.yaml`: Creates secrets for a GitHub repository and image registry, an access token for the GitHub repository and the ServiceAccount
 - `resources.yaml`: Creates PipelineResources for GitHub and Docker repositories
 
 ## Other Files
 - `service-promote.yaml`: This is the Tekton Task used for promoting from one repository to another. It creates a PullRequest and this represents the promotion from one environment to another (for example, from development to production - in this case represented as repositories)
-- `service-promote-pipeline.yaml`: Creates a pipeline that executes `build-task.yaml` and `service-promote.yaml`
+- `service-promote-pipeline.yaml`: Creates a Pipeline that executes `build-task.yaml` and `service-promote.yaml`
 - `promote.yaml`: Creates a pull request from one repository to another repository
-- `build-task.yaml`: This task builds a git source into a docker image and pushes to a docker registry
+- `build-task.yaml`: This task builds a Git source into a container image image and pushes to an image registry
 
 ## Pre-requisites
 
