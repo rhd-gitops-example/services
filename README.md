@@ -98,7 +98,7 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 - `--help`: prints the above text if true.
 - `--insecure-skip-verify` : skip TLS cerificate verification if true. Do not set this to true unless you know what you are doing.
 - `--keep-cache` : `cache-dir` is deleted unless this is set to true. Keeping the cache will often cause further promotion attempts to fail. This flag is mostly used along with `--debug` when investigating failure cases. 
-- `--repository-type` : the type of repository: github, gitlab or ghe (default "github")
+- `--repository-type` : the type of repository: github, gitlab or ghe (default "github"). If `--from` is a Git URL, it must be of the same type as that specified via `--to`.
 - `--service` : the destination path for promotion is `/environments/<env-name>/services/<service-name>/base/config/`. This argument defines `service-name` in that path.
 - `--to`: an https URL to the destination GitOps repository.
 
