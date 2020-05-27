@@ -2,7 +2,7 @@
 
 ## Building
 
-You need Go version 1.14 to build this project.
+You need Go version 1.13 or higher to build this project.
 
 ```shell
 $ go build ./cmd/services
