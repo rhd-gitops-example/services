@@ -223,7 +223,11 @@ func repoName(u string) (string, error) {
 	}
 	parts := strings.Split(parsed.Path, "/")
 	if len(parts) < 3 {
-		return "", fmt.Errorf("could not identify repository name: %s", u)
+		cleanedURL, err := CleanURL(u)
+		if err != nil {
+			return "", errors.New("failed to clean the URL when determining repository name")
+		}
+		return "", fmt.Errorf("could not identify repository name: %s", cleanedURL)
 	}
 	return strings.TrimSuffix(parts[len(parts)-1], ".git"), nil
 }
