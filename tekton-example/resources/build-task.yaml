@@ -10,14 +10,20 @@ spec:
       - name: git-source
         type: git
     params:
-    - name: pathToDockerFile
-      description: The path to the dockerfile to build
+    - name: buildahImage
+      description: The location of the buildah builder image.
+      default: quay.io/buildah/stable:v1.11.0
+    - name: pathToDockerfile
+      description: The path to the Dockerfile to build
       default: ./repo/Dockerfile
     - name: commitId
       description: commit ID of the source
       default: v2
+    - name: tlsVerify
+      description: whether we should verify the TLS on the registry endpoint (for push/pull to a non-TLS registry)
+      default: "false"
     - name: pathToContext
-      description: The build context used by Kaniko (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+      description: The build context to use
       default: ./repo
   outputs:
     resources:
@@ -25,31 +31,31 @@ spec:
         type: image
   steps:
   - name: build
-    image: docker
+    image: $(inputs.params.buildahImage)
+    securityContext:
+      privileged: true
     script: |
       #!/bin/sh
       cp -R git-source/. repo
-      docker build -f $(inputs.params.pathToDockerFile) -t $(outputs.resources.builtImage.url) $(inputs.params.pathToContext)
-    volumeMounts:
-    - name: docker-socket
-      mountPath: /var/run/docker.sock
+      buildah bud --tls-verify=$(inputs.params.tlsVerify) --layers  -f $(inputs.params.pathToDockerfile) -t $(outputs.resources.builtImage.url):$(inputs.params.commitId) $(inputs.params.pathToContext)
+    volumeMounts:                 
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
   - name: push 
-    image: docker
+    image: $(inputs.params.buildahImage)
+    securityContext:
+      privileged: true
     script: |
       #!/bin/sh
-      docker tag $(outputs.resources.builtImage.url) $(outputs.resources.builtImage.url):$(inputs.params.commitId)
-      docker push $(outputs.resources.builtImage.url):$(inputs.params.commitId)
-    volumeMounts:
-    - name: docker-socket
-      mountPath: /var/run/docker.sock
+      buildah push --tls-verify=$(inputs.params.tlsVerify) $(outputs.resources.builtImage.url):$(inputs.params.commitId)
+    volumeMounts:                 
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
   - name: update 
     image: alpine
     script: |
       #!/bin/sh
       sed -i -e "s#\$IMAGE#\$(outputs.resources.builtImage.url):\$(inputs.params.commitId)#" $(inputs.params.pathToContext)/config/deploy.yaml
   volumes:
-    - name: docker-socket
-      hostPath:
-        path: /var/run/docker.sock
-        type: Socket
-
+    - name: varlibcontainers
+      emptyDir: {}
