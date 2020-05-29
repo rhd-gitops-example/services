@@ -18,7 +18,7 @@ Creation of a TaskRun (using `promote-run.yaml`) will then further promote from 
 ## Pre-requisites
 
 - You will need two repositories for this example, one to promote from and one to promote to 
-- For the repository to promote from, an example can be forked from here: https://github.com/akihikokuroda/promote-demo
+- For the repository to promote from, an example can be forked from here: https://github.com/rhd-gitops-example/promote-demo
 - For the repository to promote to, an example can be forked from here:
  https://github.com/rhd-gitops-example/gitops-example-dev
 - You will also need to have the latest release of the Tekton CLI, which can be downloaded from here: https://github.com/tektoncd/cli
@@ -53,7 +53,7 @@ The PipelineRun you will create is designed to build your microservice from its 
 
 - To create the PipelineRun, use:
 ```shell
-tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image--param commitId=v1 --param github-secret=promote-secret --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param to=https://github.com/<github username>/<github repo>.git --param service=promote-demo --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
+tkn pipeline start service-promote-pipeline --resource git-source=git-app-repo --resource docker-image=docker-app-image --param commitId=v1 --param github-secret=promote-secret --param commit-name=<yourgitname> --param commit-email=<yourgitemail> --param to=https://github.com/<github username>/<github repo>.git --param service=promote-demo --workspace name=repo-space,claimName=repopvc,subPath=dir -s demo --showlog
 ```
 
 This example promotes from the `promote-demo` repository, containing a service with the same name.
