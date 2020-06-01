@@ -6,8 +6,12 @@ spec:
   params:
   - name: github-secret
     type: string
-  - name: github-config
+  - name: commit-name
     type: string
+    description: the GitHub name to use on the commit
+  - name: commit-email
+    type: string
+    description: the GitHub email to use on the commit
   resources: 
   - name: source-repo
     type: git
@@ -26,5 +30,7 @@ spec:
     params:
     - name: github-secret
       value: $(params.github-secret)
-    - name: github-config
-      value: $(params.github-config)
+    - name: commit-name
+      value: $(params.commit-name)
+    - name: commit-email
+      value: $(params.commit-email)
