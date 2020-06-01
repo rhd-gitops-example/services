@@ -63,7 +63,7 @@ Create or modify an existing ServiceAccount to use your `github-secret` (hint, y
 Finally start the Tekton pipeline referencing your ServiceAccount:
 
 ```sh
-tkn pipeline start automerge-pipeline -r source-repo=gitops-repo -r pr=pull-request -p github-config=promoteconfigmap -p github-secret=github-secret --showlog -s my-sa
+tkn pipeline start automerge-pipeline -r source-repo=gitops-repo -r pr=pull-request -p commit-name=<yourgitname> -p commit-email=<yourgitemail> -p github-secret=github-secret --showlog -s my-sa
 ```
 
 The pipeline will do a dry run to test that the yaml in the Pull Request is good, then merge the Pull Request and delete the branch associated with it.
