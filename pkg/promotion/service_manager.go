@@ -1,4 +1,4 @@
-package avancement
+package promotion
 
 import (
 	"context"
@@ -246,7 +246,6 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commitMsg string, client *scm.Client, fromLocal bool) (*scm.PullRequest, error) {
 	prInput, err := makePullRequestInput(fromLocal, fromURL, toURL, newBranchName, commitMsg)
 	if err != nil {
-		// TODO: improve this error message
 		return nil, err
 	}
 

@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/rhd-gitops-example/services/pkg/avancement"
 	"github.com/rhd-gitops-example/services/pkg/git"
+	"github.com/rhd-gitops-example/services/pkg/promotion"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tcnksm/go-gitconfig"
@@ -128,7 +128,7 @@ func promoteAction(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return avancement.New(cacheDir, author, avancement.WithDebug(debug), avancement.WithInsecureSkipVerify(insecureSkipVerify), avancement.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
+	return promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
 }
 
 func newAuthor() (*git.Author, error) {
