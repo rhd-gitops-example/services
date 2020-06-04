@@ -1,0 +1,56 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: build-push
+spec:
+  workspaces:
+  - name: repo
+    mountPath: /repo
+  inputs:
+    params:
+    - name: buildahImage
+      description: The location of the buildah builder image.
+      default: quay.io/buildah/stable:v1.11.0
+    - name: pathToDockerfile
+      description: The path to the Dockerfile to build
+      default: /repo/Dockerfile
+    - name: commitId
+      description: commit ID of the source
+      default: v2
+    - name: tlsVerify
+      description: whether we should verify the TLS on the registry endpoint (for push/pull to a non-TLS registry)
+      default: "false"
+    - name: pathToContext
+      description: The build context to use
+      default: /repo
+    - name: destImage
+      description: Built image location
+  steps:
+  - name: build
+    image: $(inputs.params.buildahImage)
+    securityContext:
+      privileged: true
+    script: |
+      #!/bin/sh
+      buildah bud --tls-verify=$(inputs.params.tlsVerify) --layers  -f $(inputs.params.pathToDockerfile) -t $(inputs.params.destImage):$(inputs.params.commitId) $(inputs.params.pathToContext)
+    volumeMounts:                 
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
+  - name: push 
+    image: $(inputs.params.buildahImage)
+    securityContext:
+      privileged: true
+    script: |
+      #!/bin/sh
+      buildah push --tls-verify=$(inputs.params.tlsVerify) $(inputs.params.destImage):$(inputs.params.commitId)
+    volumeMounts:                 
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
+  - name: update 
+    image: alpine
+    script: |
+      #!/bin/sh
+      sed -i -e "s#\$IMAGE#\$(inputs.params.destImage):\$(inputs.params.commitId)#" $(inputs.params.pathToContext)/config/deploy.yaml
+  volumes:
+    - name: varlibcontainers
+      emptyDir: {}

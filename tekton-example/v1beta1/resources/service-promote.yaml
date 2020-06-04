@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: service-promote
+spec:
+  workspaces:
+  - name: repo
+  params:
+  - name: github-secret
+    type: string
+    description: name of the secret that contains the GitHub access token, the access token must be in a token key.
+  - name: gitops-repo
+    type: string
+    description: GitOps repository URL that the service will be promoted to
+  - name: service
+    type: string
+    description: service name to be promoted
+  - name: commit-name
+    type: string
+    description: the GitHub username to username
+  - name: commit-email
+    type: string
+    description: the GitHub email to use
+  steps:
+  - name: promote
+    image: quay.io/redhat-developer/gitops-cli
+    imagePullPolicy: Always
+    script: |
+      #!/bin/sh
+      cd /workspace/repo
+      gitCommit=$(git rev-parse --short HEAD)
+      services promote  --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from /workspace/repo --to $(params.gitops-repo) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
+    env:
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: $(params.github-secret)
+          key: token
+

@@ -1,0 +1,79 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: service-promote-pipeline
+spec:
+  workspaces:
+  - name: repo-space
+  params:
+  - name: source-repo
+    type: string
+    description: GitHub repository url to be promoted from
+  - name: revision
+    type: string
+    description: The git revision of source-repo to promote
+    default: master
+  - name: github-secret
+    type: string
+    description: name of the secret that contains the GitHub access token, the access token must be in a token key.
+  - name: gitops-repo
+    type: string
+    description: GitOps repository to promote service into
+  - name: service
+    type: string
+    description: service name to be promoted
+  - name: commit-name
+    type: string
+    description: the GitHub name to use on the commit for promotion
+  - name: commit-email
+    type: string
+    description: the GitHub email to use on the commit for promotion
+  - name: dest-image
+    type: string
+    description: Image registry coordinates for the built image
+  tasks:
+  - name: fetch-source
+    taskRef: 
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: repo-space
+    params:
+    - name: url
+      value: $(params.source-repo)
+    - name: revision
+      value: $(params.revision)
+  - name: build-simple
+    runAfter: [fetch-source]
+    taskRef:
+      name: build-push
+    workspaces:
+    - name: repo
+      workspace: repo-space
+    params:
+    - name: commitId
+      value: $(tasks.fetch-source.results.commit)
+    - name: destImage
+      value: $(params.dest-image)
+  - name: promote
+    runAfter: [build-simple]
+    taskRef:
+      name: service-promote
+    workspaces:
+    - name: repo
+      workspace: repo-space
+    params:
+    - name: github-secret
+      value: $(params.github-secret)
+    - name: gitops-repo
+      value: $(params.gitops-repo)
+    - name: service
+      value: $(params.service)
+    - name: commit-name
+      value: $(params.commit-name)
+    - name: commit-email
+      value: $(params.commit-email)
+
+
+
+
