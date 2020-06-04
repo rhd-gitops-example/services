@@ -81,15 +81,12 @@ func WithRepoType(f string) serviceOpt {
 	}
 }
 
-// TODO: make this a command-line parameter defaulting to "master"
-const fromBranch = "master"
-
 // Promote is the main driver for promoting files between two
 // repositories.
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, message string, keepCache bool) error {
+func (s *ServiceManager) Promote(serviceName, fromURL, fromBranch, toURL, toBranch, newBranchName, message string, keepCache bool) error {
 	var source, destination git.Repo
 	var reposToDelete []git.Repo
 
@@ -189,7 +186,7 @@ func (s *ServiceManager) Promote(serviceName, fromURL, toURL, newBranchName, mes
 	}
 
 	ctx := context.Background()
-	pr, err := createPullRequest(ctx, fromURL, toURL, newBranchName, commitMsg, s.clientFactory(s.author.Token, toURL, s.repoType, s.tlsVerify), isLocal)
+	pr, err := createPullRequest(ctx, fromURL, toURL, toBranch, newBranchName, commitMsg, s.clientFactory(s.author.Token, toURL, s.repoType, s.tlsVerify), isLocal)
 	if err != nil {
 		message := fmt.Sprintf("failed to create a pull-request for branch %s, error: %s", newBranchName, err)
 		return git.GitError(message, toURL)
@@ -243,8 +240,8 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	return repo, nil
 }
 
-func createPullRequest(ctx context.Context, fromURL, toURL, newBranchName, commitMsg string, client *scm.Client, fromLocal bool) (*scm.PullRequest, error) {
-	prInput, err := makePullRequestInput(fromLocal, fromURL, toURL, newBranchName, commitMsg)
+func createPullRequest(ctx context.Context, fromURL, toURL, toBranch, newBranchName, commitMsg string, client *scm.Client, fromLocal bool) (*scm.PullRequest, error) {
+	prInput, err := makePullRequestInput(fromLocal, fromURL, toURL, toBranch, newBranchName, commitMsg)
 	if err != nil {
 		return nil, err
 	}

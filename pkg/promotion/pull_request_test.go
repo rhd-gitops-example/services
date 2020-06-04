@@ -9,7 +9,7 @@ import (
 )
 
 func TestMakePullRequestInput(t *testing.T) {
-	pr, err := makePullRequestInput(false, "https://example.com/project/dev-env.git", "https://example.com/project/prod-env.git", "my-test-branch", "foo bar wibble")
+	pr, err := makePullRequestInput(false, "https://example.com/project/dev-env.git", "https://example.com/project/prod-env.git", "master", "my-test-branch", "foo bar wibble")
 	if err != nil {
 		t.Fatal(err)
 	}

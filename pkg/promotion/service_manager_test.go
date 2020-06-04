@@ -63,7 +63,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	}
 	devRepo.AddFiles("services/my-service/base/config/myfile.yaml")
 	stagingRepo.AddFiles("")
-	err := sm.Promote("my-service", dev, staging, dstBranch, msg, keepCache)
+	err := sm.Promote("my-service", dev, "master", staging, "master", dstBranch, msg, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 	devRepo.AddFiles("config/myfile.yaml")
 	stagingRepo.AddFiles("staging")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, msg, keepCache)
+	err := sm.Promote("my-service", ldev, "master", staging, "master", dstBranch, msg, keepCache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	devRepo.AddFiles("/config/myfile.yaml")
 	stagingRepo.AddFiles("/staging")
 
-	err := sm.Promote("my-service", ldev, staging, dstBranch, "", false)
+	err := sm.Promote("my-service", ldev, "master", staging, "master", dstBranch, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestPromoteErrorsIfMultipleEnvironments(t *testing.T) {
 	devRepo.AddFiles("services/my-service/base/config/myfile.yaml")
 
 	msg := "foo message"
-	err := sm.Promote("my-service", dev, staging, dstBranch, msg, false)
+	err := sm.Promote("my-service", dev, "master", staging, "master", dstBranch, msg, false)
 	if err == nil {
 		t.Fail()
 	}
@@ -259,7 +259,7 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 	devRepo.AddFiles("dev/services/my-service/base/config/myfile.yaml")
 	stagingRepo.AddFiles("staging")
 
-	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
+	err := sm.Promote("my-service", dev, "master", staging, "master", dstBranch, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -376,7 +376,7 @@ func TestRepositoryCloneErrorOmitsToken(t *testing.T) {
 		errorMessage := fmt.Errorf("failed to clone repository %s: exit status 128", dev)
 		return nil, errorMessage
 	}
-	err := sm.Promote("my-service", dev, staging, dstBranch, "", false)
+	err := sm.Promote("my-service", dev, "master", staging, "master", dstBranch, "", false)
 	if err != nil {
 		devRepoToUseInError := fmt.Sprintf(".*%s", dev)
 		test.AssertErrorMatch(t, devRepoToUseInError, err)

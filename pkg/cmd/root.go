@@ -23,6 +23,8 @@ const (
 	insecureSkipVerifyFlag = "insecure-skip-verify"
 	debugFlag              = "debug"
 	keepCacheFlag          = "keep-cache"
+	fromBranchFlag         = "from-branch"
+	toBranchFlag           = "to-branch"
 )
 
 var rootCmd = &cobra.Command{
