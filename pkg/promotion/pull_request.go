@@ -7,10 +7,10 @@ import (
 	"github.com/rhd-gitops-example/services/pkg/util"
 )
 
-// TODO: OptionFuncs for Base and Title?
+// TODO: OptionFunc for Title?
 // TODO: For the Head, should this try and determine whether or not this is a
 // fork ("user" of both repoURLs) and if so, simplify the Head?
-func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody string) (*scm.PullRequestInput, error) {
+func makePullRequestInput(fromLocal bool, fromURL, toURL, toBranch, branchName, prBody string) (*scm.PullRequestInput, error) {
 	var title string
 
 	_, toRepo, err := util.ExtractUserAndRepo(toURL)
@@ -31,7 +31,7 @@ func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody str
 	return &scm.PullRequestInput{
 		Title: title,
 		Head:  branchName,
-		Base:  "master",
+		Base:  toBranch,
 		Body:  prBody,
 	}, nil
 }
