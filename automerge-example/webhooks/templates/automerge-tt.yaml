@@ -40,6 +40,8 @@ spec:
           value: $(params.gitrepositoryurl)
         - name: refspec
           value: refs/heads/*:refs/heads/*
+        - name: depth
+          value: "0"
         type: git
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
