@@ -4,7 +4,7 @@ An example of using `promote` in a Tekton Pipeline to promote a service's config
 
 ## Tekton APIs: v1alpha1 and v1beta1
 
-Tekton Pipelines introduced new [v1beta1](https://github.com/tektoncd/pipeline/blob/master/docs/migrating-v1alpha1-to-v1beta1.md) APIs with its 0.11.x release. We first developed this sample against v1alpha1 APIs, but now include both v1alpha1 and v1beta1 versions of this sample. The v1beta1 version uses no Tekton PipelineResources, in the spirit of [this](https://github.com/tektoncd/pipeline/blob/master/docs/migrating-v1alpha1-to-v1beta1.md#replacing-pipelineresources-with-tasks) section of the migration document. You should use Tekton Pipelines v0.12.1 or higher and the v1beta1 samples unless you are unable to do so.
+Tekton Pipelines introduced new [v1beta1](https://github.com/tektoncd/pipeline/blob/master/docs/migrating-v1alpha1-to-v1beta1.md) APIs with its 0.11.x release. We first developed this sample against v1alpha1 APIs, but now include both v1alpha1 and v1beta1 versions of this sample. The v1beta1 version uses no Tekton PipelineResources, in the spirit of [this](https://github.com/tektoncd/pipeline/blob/master/docs/migrating-v1alpha1-to-v1beta1.md#replacing-pipelineresources-with-tasks) section of the migration document. You should use Tekton Pipelines v0.12.1 or higher and the v1beta1 samples unless you are unable to do so, or wish to use the code in the final section, 'Promote to Next Managed Environment'. This has only been implemented under the v1alpha1 sample. We're still working through how promotion between GitOps repositories should work, so this last section is fairly expermimental.
 
 ## Template Files
 
@@ -41,13 +41,21 @@ kubectl create ns <namespace>
 kubectl config set-context --current --namespace=<namespace>
 ```
 
+- Choose whether to use the `v1alpha1` or `v1beta1` resources. As per the introduction, we recommend Tekton 0.12.x+ and the `v1beta1` path unless you have clear reasons to choose `v1alpha1`.
+
+```sh
+cd v1beta1
+# OR
+cd v1alpha1
+```
+
 - Apply the resources folder:
 
 ```shell
 kubectl apply -f resources
 ```
 
-- Edit the files in the template folder to contain real values. Entries of the form `REPLACE_ME.x` must be replaced with the value you wish to use, i.e at occurences such as `REPLACE_ME.IMAGE_NAME`, `REPLACE_ME.GITHUB_ORG/REPLACE_ME.GITHUB_REPO` etc... There are eight instances to replace in the v1alpha1 templates/ folder and nine in the v1beta1 templates/ folder. 
+- Edit the files in the template folder to contain real values. Entries of the form `REPLACE_ME.x` must be replaced with the value you wish to use, i.e at occurences such as `REPLACE_ME.IMAGE_NAME`, `REPLACE_ME.GITHUB_ORG/REPLACE_ME.GITHUB_REPO` etc... There are eight instances to replace in the v1alpha1 templates/ folder and nine in the v1beta1 templates/ folder.
 
 - If you are using v1alpha1 you can apply the templates folder:
 
@@ -98,8 +106,6 @@ tkn pipelinerun logs [pipelinerun] -f
 ## Promote to Next Managed Environment
 
 Optionally, you can run a subsequent promote from one GitOps repository to another (e.g staging to prod) after merging the pull request on your first GitOps repository. For this you will need a third repository, and for this you can fork: https://github.com/rhd-gitops-example/gitops-example-staging
-
-This section has only been implemented under the v1alpha1 sample. We're still working through how promotion between GitOps repositories should work, so this section is fairly expermimental.
 
 - To do this second promote, you will need to create a TaskRun that executes a task promoting from a testing repository to a production repository
 - To create the TaskRun (again this uses a service called `promote-demo`), use:
