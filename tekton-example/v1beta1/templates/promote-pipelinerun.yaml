@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: run-with-template-
+spec:
+  serviceAccountName: demo
+  pipelineRef:
+    name: service-promote-pipeline
+  params:
+    - name: service
+      value: promote-demo
+    - name: commit-name
+      # e.g. my-github-username
+      value: REPLACEME.COMMIT_NAME
+    - name: commit-email 
+      # e.g. my-github-email-address
+      value: REPLACEME.COMMIT_EMAIL
+    - name: source-repo
+      # e.g. https://github.com/rhd-gitops-example/promote-demo.git
+      value: REPLACEME.SOURCE_REPO
+    - name: gitops-repo
+      # e.g. https://github.com/rhd-gitops-example/gitops-example-dev.git
+      value: REPLACEME.GITOPS_REPO
+    - name: github-secret
+      value: promote-secret
+    - name: dest-image
+      # e.g. my-dockerhub-name/promote-demo
+      value: REPLACEME.IMAGE_NAME
+  workspaces:
+    - name: repo-space
+      volumeClaimTemplate:
+        metadata:
+          name: mypvc
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Mi
