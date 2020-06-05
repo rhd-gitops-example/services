@@ -20,6 +20,7 @@ func makePromoteCmd() *cobra.Command {
 		RunE:  promoteAction,
 	}
 
+	// Required flags
 	cmd.Flags().String(
 		fromFlag,
 		"",
@@ -44,19 +45,20 @@ func makePromoteCmd() *cobra.Command {
 	logIfError(cmd.MarkFlagRequired(serviceFlag))
 	logIfError(viper.BindPFlag(serviceFlag, cmd.Flags().Lookup(serviceFlag)))
 
+	// Optional flags
+	cmd.Flags().String(
+		branchNameFlag,
+		"",
+		"the name of the branch on the destination repository for the pull request (auto-generated if empty)",
+	)
+	logIfError(viper.BindPFlag(branchNameFlag, cmd.Flags().Lookup(branchNameFlag)))
+
 	cmd.Flags().String(
 		cacheDirFlag,
 		"~/.promotion/cache",
 		"where to cache Git checkouts",
 	)
 	logIfError(viper.BindPFlag(cacheDirFlag, cmd.Flags().Lookup(cacheDirFlag)))
-
-	cmd.Flags().String(
-		nameFlag,
-		"",
-		"the name to use for commits when creating branches",
-	)
-	logIfError(viper.BindPFlag(nameFlag, cmd.Flags().Lookup(nameFlag)))
 
 	cmd.Flags().String(
 		emailFlag,
@@ -73,11 +75,11 @@ func makePromoteCmd() *cobra.Command {
 	logIfError(viper.BindPFlag(msgFlag, cmd.Flags().Lookup(msgFlag)))
 
 	cmd.Flags().String(
-		repoTypeFlag,
-		"github",
-		"the type of repository: github, gitlab or ghe",
+		nameFlag,
+		"",
+		"the name to use for commits when creating branches",
 	)
-	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
+	logIfError(viper.BindPFlag(nameFlag, cmd.Flags().Lookup(nameFlag)))
 
 	cmd.Flags().Bool(
 		debugFlag,
@@ -99,6 +101,13 @@ func makePromoteCmd() *cobra.Command {
 		"whether to retain the locally cloned repositories in the cache directory",
 	)
 	logIfError(viper.BindPFlag(keepCacheFlag, cmd.Flags().Lookup(keepCacheFlag)))
+
+	cmd.Flags().String(
+		repoTypeFlag,
+		"github",
+		"the type of repository: github, gitlab or ghe",
+	)
+	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
 	return cmd
 }
 
@@ -109,15 +118,18 @@ func logIfError(e error) {
 }
 
 func promoteAction(c *cobra.Command, args []string) error {
+	// Required flags
 	fromRepo := viper.GetString(fromFlag)
 	toRepo := viper.GetString(toFlag)
 	service := viper.GetString(serviceFlag)
-	repoType := viper.GetString(repoTypeFlag)
+
+	// Optional flags
 	newBranchName := viper.GetString(branchNameFlag)
-	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
-	debug := viper.GetBool(debugFlag)
-	keepCache := viper.GetBool(keepCacheFlag)
 	msg := viper.GetString(msgFlag)
+	debug := viper.GetBool(debugFlag)
+	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
+	keepCache := viper.GetBool(keepCacheFlag)
+	repoType := viper.GetString(repoTypeFlag)
 
 	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
 	if err != nil {
