@@ -38,6 +38,8 @@ spec:
           value: master
         - name: url
           value: $(params.gitrepositoryurl)
+        - name: refspec
+          value: refs/heads/*:refs/heads/*
         type: git
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun

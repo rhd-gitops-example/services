@@ -8,4 +8,6 @@ spec:
     value: master
   - name: url
     value: https://github.com/YOUR_GITHUB_ID/gitops-example-dev
+  - name: refspec
+    value: refs/heads/*:refs/heads/*
   type: git
