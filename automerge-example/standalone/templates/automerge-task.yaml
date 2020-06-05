@@ -32,6 +32,8 @@ spec:
       fullPRLink=$(yq r pull-request/pr.json 'Link')
       prURL=${fullPRLink%.diff}
 
+      git config --global user.name $(params.commit-name)
+      git config --global user.email $(params.commit-email)
       cd git-source
       hub merge $prURL
       git push -u origin master
