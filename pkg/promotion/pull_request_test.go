@@ -9,7 +9,15 @@ import (
 )
 
 func TestMakePullRequestInput(t *testing.T) {
-	pr, err := makePullRequestInput(false, "https://example.com/project/dev-env.git", "https://example.com/project/prod-env.git", "master", "my-test-branch", "foo bar wibble")
+	from := EnvLocale{
+		Path:   "https://example.com/project/dev-env.git",
+		Branch: "example",
+	}
+	to := EnvLocale{
+		Path:   "https://example.com/project/prod-env.git",
+		Branch: "master",
+	}
+	pr, err := makePullRequestInput(from, to, "my-test-branch", "foo bar wibble")
 	if err != nil {
 		t.Fatal(err)
 	}

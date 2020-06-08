@@ -1,7 +1,6 @@
 package promotion
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -13,8 +12,6 @@ import (
 
 	"github.com/rhd-gitops-example/services/pkg/git"
 	"github.com/rhd-gitops-example/services/pkg/local"
-
-	"github.com/google/uuid"
 )
 
 type ServiceManager struct {
@@ -81,120 +78,6 @@ func WithRepoType(f string) serviceOpt {
 	}
 }
 
-// Promote is the main driver for promoting files between two
-// repositories.
-//
-// It uses a Git cache to checkout the code to, and will copy the environment
-// configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName, fromURL, fromBranch, toURL, toBranch, newBranchName, message string, keepCache bool) error {
-	var source, destination git.Repo
-	var reposToDelete []git.Repo
-
-	defer func(keepRepos bool, repos *[]git.Repo) {
-		if !keepRepos {
-			for _, repo := range *repos {
-				err := repo.DeleteCache()
-				if err != nil {
-					log.Printf("failed deleting files from cache: %s", err)
-				}
-			}
-		}
-	}(keepCache, &reposToDelete)
-
-	var localSource git.Source
-	var errorSource error
-	isLocal := fromLocalRepo(fromURL)
-
-	if isLocal {
-		localSource = s.localFactory(fromURL, s.debug)
-		if newBranchName == "" {
-			newBranchName = generateBranchForLocalSource(localSource)
-		}
-	} else {
-		source, errorSource = s.checkoutSourceRepo(fromURL, fromBranch)
-		if errorSource != nil {
-			return git.GitError("error checking out source repository from Git", fromURL)
-		}
-		reposToDelete = append(reposToDelete, source)
-		if newBranchName == "" {
-			newBranchName = generateBranch(source)
-		}
-	}
-
-	destination, err := s.checkoutDestinationRepo(toURL, newBranchName)
-	if err != nil {
-		if git.IsGitError(err) {
-			return git.GitError(fmt.Sprintf("failed to clone destination repository, error: %s", err.Error()), toURL)
-		}
-		// This would be a checkout error as the clone error gives us the above gitError instead
-		return fmt.Errorf("failed to checkout destination repository, error: %w", err)
-	}
-
-	if destination == nil {
-		// Should never happen, but if it does...
-		return fmt.Errorf("destination repository was not initialised despite being no errors")
-	}
-
-	reposToDelete = append(reposToDelete, destination)
-
-	var copied []string
-
-	if isLocal {
-		overrideTargetFolder, err := destination.GetUniqueEnvironmentFolder()
-		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
-		}
-		copied, err = local.CopyConfig(serviceName, localSource, destination, overrideTargetFolder)
-		if err != nil {
-			return fmt.Errorf("failed to set up local repository: %w", err)
-		}
-	} else {
-		sourceEnvironment, err := source.GetUniqueEnvironmentFolder()
-		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
-		}
-
-		destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
-
-		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
-		}
-
-		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, destinationEnvironment)
-		if err != nil {
-			return fmt.Errorf("failed to copy service: %w", err)
-		}
-	}
-
-	commitMsg := message
-	if commitMsg == "" {
-		if isLocal {
-			commitMsg = fmt.Sprintf("Promotion of service %s from local filesystem directory %s.", serviceName, fromURL)
-		} else {
-			commitMsg = generateDefaultCommitMsg(source, serviceName, fromURL, fromBranch)
-		}
-	}
-	if err := destination.StageFiles(copied...); err != nil {
-		return fmt.Errorf("failed to stage files %s: %w", copied, err)
-	}
-	if err := destination.Commit(commitMsg, s.author); err != nil {
-		return fmt.Errorf("failed to commit: %w", err)
-	}
-
-	if err := destination.Push(newBranchName); err != nil {
-		return fmt.Errorf("failed to push to Git repository - check the access token is correct with sufficient permissions: %w", err)
-	}
-
-	ctx := context.Background()
-	pr, err := createPullRequest(ctx, fromURL, toURL, toBranch, newBranchName, commitMsg, s.clientFactory(s.author.Token, toURL, s.repoType, s.tlsVerify), isLocal)
-	if err != nil {
-		message := fmt.Sprintf("failed to create a pull-request for branch %s, error: %s", newBranchName, err)
-		return git.GitError(message, toURL)
-	}
-	log.Printf("created PR %d", pr.Number)
-	return nil
-}
-
 func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, error) {
 	repo, err := s.cloneRepo(repoURL, branch)
 	if err != nil {
@@ -213,11 +96,15 @@ func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, e
 func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Repo, error) {
 	repo, err := s.cloneRepo(repoURL, branch)
 	if err != nil {
-		return nil, git.GitError(err.Error(), repoURL)
+		return nil, git.GitError(fmt.Sprintf("failed to clone destination repository, error: %s", err.Error()), repoURL)
 	}
 	err = repo.CheckoutAndCreate(branch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to checkout branch %s, error: %w", branch, err)
+	}
+	if repo == nil {
+		// Should never happen, but if it does...
+		return nil, fmt.Errorf("destination repository was not initialised despite being no errors")
 	}
 	return repo, nil
 }
@@ -240,18 +127,6 @@ func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	return repo, nil
 }
 
-func createPullRequest(ctx context.Context, fromURL, toURL, toBranch, newBranchName, commitMsg string, client *scm.Client, fromLocal bool) (*scm.PullRequest, error) {
-	prInput, err := makePullRequestInput(fromLocal, fromURL, toURL, toBranch, newBranchName, commitMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	u, _ := url.Parse(toURL)
-	pathToUse := strings.TrimPrefix(strings.TrimSuffix(u.Path, ".git"), "/")
-	pr, _, err := client.PullRequests.Create(ctx, pathToUse, prInput)
-	return pr, err
-}
-
 func encode(gitURL, branch string) string {
 	return url.QueryEscape(gitURL) + "-" + url.QueryEscape(branch)
 }
@@ -269,35 +144,4 @@ func addCredentialsIfNecessary(s string, a *git.Author) (string, error) {
 	}
 	parsed.User = url.UserPassword("promotion", a.Token)
 	return parsed.String(), nil
-}
-
-func fromLocalRepo(s string) bool {
-	parsed, err := url.Parse(s)
-	if err != nil || parsed.Scheme == "" {
-		return true
-	}
-	return false
-}
-
-func generateBranch(repo git.Repo) string {
-	uniqueString := uuid.New()
-	runes := []rune(uniqueString.String())
-	branchName := repo.GetName() + "-" + repo.GetCommitID() + "-" + string(runes[0:5])
-	branchName = strings.Replace(branchName, "\n", "", -1)
-	return branchName
-}
-
-func generateBranchForLocalSource(source git.Source) string {
-	uniqueString := uuid.New()
-	runes := []rune(uniqueString.String())
-	branchName := source.GetName() + "-" + "local-dir" + "-" + string(runes[0:5])
-	branchName = strings.Replace(branchName, "\n", "", -1)
-	return branchName
-}
-
-// generateDefaultCommitMsg constructs a default commit message based on the source information.
-func generateDefaultCommitMsg(sourceRepo git.Repo, serviceName, from, fromBranch string) string {
-	commit := sourceRepo.GetCommitID()
-	msg := fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, fromBranch, from)
-	return msg
 }
