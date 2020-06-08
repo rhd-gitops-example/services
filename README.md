@@ -63,6 +63,7 @@ This will again raise a Pull Request, copying the local files `/workspace/servic
 ## CLI Reference
 
 ```sh
+services promote --help
 promote from one environment to another
 
 Usage:
