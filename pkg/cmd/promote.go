@@ -139,7 +139,6 @@ func promoteAction(c *cobra.Command, args []string) error {
 
 	// Optional flags
 	newBranchName := viper.GetString(branchNameFlag)
-	msg := viper.GetString(msgFlag)
 	debug := viper.GetBool(debugFlag)
 	fromBranch := viper.GetString(fromBranchFlag)
 	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
@@ -157,7 +156,18 @@ func promoteAction(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType)).Promote(service, fromRepo, fromBranch, toRepo, toBranch, newBranchName, msg, keepCache)
+
+	from := promotion.EnvLocale{
+		Path:   fromRepo,
+		Branch: fromBranch,
+	}
+	to := promotion.EnvLocale{
+		Path:   toRepo,
+		Branch: toBranch,
+	}
+
+	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))
+	return sm.Promote(service, from, to, newBranchName, msg, keepCache)
 }
 
 func newAuthor() (*git.Author, error) {
