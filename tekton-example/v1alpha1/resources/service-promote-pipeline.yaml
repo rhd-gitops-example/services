@@ -3,36 +3,36 @@ kind: Pipeline
 metadata:
   name: service-promote-pipeline
 spec:
-  workspaces:
-  - name: repo-space
   params:
-  - name: commitId
-    type: string
-    description: commit ID of the source repository.
-  - name: github-secret
-    type: string
-    description: name of the secret that contains the GitHub access token, the access token must be in a token key.
-  - name: from
-    type: string
-    description: github repository url to be promoted from
-    default: /workspace/repo
-  - name: to
-    type: string
-    description: github repository url to be promoted to
-  - name: service
-    type: string
-    description: service name to be promoted
-  - name: commit-name
-    type: string
-    description: the GitHub name to use on the commit
-  - name: commit-email
-    type: string
-    description: the GitHub email to use on the commit
+    - name: commitId
+      type: string
+      description: commit ID of the source repository.
+    - name: github-secret
+      type: string
+      description: name of the secret that contains the GitHub access token, the access token must be in a token key.
+    - name: from
+      type: string
+      description: github repository url to be promoted from
+      default: /workspace/repo
+    - name: to
+      type: string
+      description: github repository url to be promoted to
+    - name: service
+      type: string
+      description: service name to be promoted
+    - name: commit-name
+      type: string
+      description: the GitHub name to use on the commit
+    - name: commit-email
+      type: string
+      description: the GitHub email to use on the commit
   resources: 
-  - name: git-source
-    type: git
-  - name: docker-image
-    type: image
+    - name: git-source
+      type: git
+    - name: docker-image
+      type: image
+  workspaces:
+    - name: repo-space
   tasks:
   - name: build-simple
     taskRef:
@@ -41,15 +41,15 @@ spec:
     - name: repo
       workspace: repo-space
     params:
-    - name: commitId
-      value: $(params.commitId)
+      - name: commitId
+        value: $(params.commitId)
     resources:
       inputs:
-      - name: git-source
-        resource: git-source
+        - name: git-source
+          resource: git-source
       outputs:
-      - name: builtImage
-        resource: docker-image
+        - name: builtImage
+          resource: docker-image
   - name: promote
     runAfter: [build-simple]
     taskRef:
@@ -58,18 +58,18 @@ spec:
     - name: repo
       workspace: repo-space
     params:
-    - name: github-secret
-      value: $(params.github-secret)
-    - name: from
-      value: $(params.from)
-    - name: to
-      value: $(params.to)
-    - name: service
-      value: $(params.service)
-    - name: commit-name
-      value: $(params.commit-name)
-    - name: commit-email
-      value: $(params.commit-email)
+      - name: github-secret
+        value: $(params.github-secret)
+      - name: from
+        value: $(params.from)
+      - name: to
+        value: $(params.to)
+      - name: service
+        value: $(params.service)
+      - name: commit-name
+        value: $(params.commit-name)
+      - name: commit-email
+        value: $(params.commit-email)
 
 
 

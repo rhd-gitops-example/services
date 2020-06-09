@@ -18,6 +18,7 @@ metadata:
 stringData:
   token: REPLACE_ME.GITHUB_ACCESS_TOKEN
 
+
 ---
 
 apiVersion: v1

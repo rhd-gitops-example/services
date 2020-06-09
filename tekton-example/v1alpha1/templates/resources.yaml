@@ -32,6 +32,5 @@ spec:
   resources:
     requests:
       storage: 16Mi
-  volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
