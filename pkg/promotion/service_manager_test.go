@@ -1,4 +1,4 @@
-package avancement
+package promotion
 
 import (
 	"errors"
