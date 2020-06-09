@@ -70,6 +70,7 @@ Usage:
   services promote [flags]
 
 Flags:
+      --branch-name string       the name of the branch on the destination repository for the pull request
       --cache-dir string         where to cache Git checkouts (default "~/.promotion/cache")
       --commit-email string      the email to use for commits when creating branches
       --commit-message string    the msg to use on the resultant commit and pull request
@@ -89,6 +90,7 @@ Global Flags:
 
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change. Any of these arguments may be provided as environment variables, using all upper case and replacing `-` with `_`. Hence you can set CACHE_DIR, COMMIT_EMAIL, etc.
 
+- `--branch-name` : use this to override the branch name on the destination Git repository, which will otherwise be generated automatically.
 - `--cache-dir` : path on the local filesystem in which Git checkouts will be cached.
 - `--commit-email` : Git commits require an associated email address and username. This is the email address. May be set via ~/.gitconfig.
 - `--commit-message` : use this to override the commit message which will otherwise be generated automatically.
@@ -117,3 +119,4 @@ Inside of the `plugin` folder you'll see documentation and other files related t
 Client Version: openshift-clients-4.3.13-202004121622
 Server Version: 4.3.13
 Kubernetes Version: v1.16.2
+```
