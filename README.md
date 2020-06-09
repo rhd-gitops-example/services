@@ -70,7 +70,7 @@ Usage:
   services promote [flags]
 
 Flags:
-      --branch-name string       the name of the branch on the destination repository for the pull request
+      --branch-name string       the name of the branch on the destination repository for the pull request (auto-generated if empty)
       --cache-dir string         where to cache Git checkouts (default "~/.promotion/cache")
       --commit-email string      the email to use for commits when creating branches
       --commit-message string    the msg to use on the resultant commit and pull request
@@ -85,6 +85,7 @@ Flags:
       --service string           service name to promote
       --to string                destination Git repository
       --to-branch string         branch on the destination Git repository (default "master")
+
 Global Flags:
       --github-token string   oauth access token to authenticate the request
 ```

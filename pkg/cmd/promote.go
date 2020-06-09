@@ -119,7 +119,7 @@ func makePromoteCmd() *cobra.Command {
 	cmd.Flags().String(
 		toBranchFlag,
 		"master",
-		"branch on the source Git repository",
+		"branch on the destination Git repository",
 	)
 	logIfError(viper.BindPFlag(toBranchFlag, cmd.Flags().Lookup(toBranchFlag)))
 	return cmd
@@ -139,11 +139,11 @@ func promoteAction(c *cobra.Command, args []string) error {
 
 	// Optional flags
 	newBranchName := viper.GetString(branchNameFlag)
+	msg := viper.GetString(msgFlag)
 	debug := viper.GetBool(debugFlag)
 	fromBranch := viper.GetString(fromBranchFlag)
 	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
-	msg := viper.GetString(msgFlag)
 	repoType := viper.GetString(repoTypeFlag)
 	toBranch := viper.GetString(toBranchFlag)
 
