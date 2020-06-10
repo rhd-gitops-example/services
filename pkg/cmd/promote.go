@@ -95,6 +95,13 @@ func makePromoteCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag(fromBranchFlag, cmd.Flags().Lookup(fromBranchFlag)))
 
+	cmd.Flags().String(
+		fromEnvFolderFlag,
+		"",
+		"env folder on the source Git repository (if not provided, the repository should only have one environment)",
+	)
+	logIfError(viper.BindPFlag(fromEnvFolderFlag, cmd.Flags().Lookup(fromEnvFolderFlag)))
+
 	cmd.Flags().Bool(
 		insecureSkipVerifyFlag,
 		false,
@@ -122,6 +129,13 @@ func makePromoteCmd() *cobra.Command {
 		"branch on the destination Git repository",
 	)
 	logIfError(viper.BindPFlag(toBranchFlag, cmd.Flags().Lookup(toBranchFlag)))
+
+	cmd.Flags().String(
+		toEnvFolderFlag,
+		"",
+		"env folder on the destination Git repository (if not provided, the repository should only have one environment)",
+	)
+	logIfError(viper.BindPFlag(toEnvFolderFlag, cmd.Flags().Lookup(toEnvFolderFlag)))
 	return cmd
 }
 
@@ -142,10 +156,12 @@ func promoteAction(c *cobra.Command, args []string) error {
 	msg := viper.GetString(msgFlag)
 	debug := viper.GetBool(debugFlag)
 	fromBranch := viper.GetString(fromBranchFlag)
+	fromEnvFolder := viper.GetString(fromEnvFolderFlag)
 	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
 	repoType := viper.GetString(repoTypeFlag)
 	toBranch := viper.GetString(toBranchFlag)
+	toEnvFolder := viper.GetString(toEnvFolderFlag)
 
 	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
 	if err != nil {
@@ -160,10 +176,12 @@ func promoteAction(c *cobra.Command, args []string) error {
 	from := promotion.EnvLocation{
 		RepoPath: fromRepo,
 		Branch:   fromBranch,
+		Folder:   fromEnvFolder,
 	}
 	to := promotion.EnvLocation{
 		RepoPath: toRepo,
 		Branch:   toBranch,
+		Folder:   toEnvFolder,
 	}
 
 	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))

@@ -18,12 +18,14 @@ const (
 	debugFlag              = "debug"
 	fromFlag               = "from"
 	fromBranchFlag         = "from-branch"
+	fromEnvFolderFlag      = "from-env-folder"
 	insecureSkipVerifyFlag = "insecure-skip-verify"
 	keepCacheFlag          = "keep-cache"
 	repoTypeFlag           = "repository-type"
 	serviceFlag            = "service"
 	toFlag                 = "to"
 	toBranchFlag           = "to-branch"
+	toEnvFolderFlag        = "to-env-folder"
 	githubTokenFlag        = "github-token"
 )
 
