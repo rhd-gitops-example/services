@@ -29,11 +29,11 @@ spec:
     imagePullPolicy: Always
     script: |
       #!/bin/sh
-      services promote --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from $(params.from) --to $(params.to) --service $(params.service)
+      services promote --commit-name=$(inputs.params.commit-name) --commit-email=$(inputs.params.commit-email) --from $(inputs.params.from) --to $(inputs.params.to) --service $(inputs.params.service)
     env:
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: $(params.github-secret)
+          name: $(inputs.params.github-secret)
           key: token
 

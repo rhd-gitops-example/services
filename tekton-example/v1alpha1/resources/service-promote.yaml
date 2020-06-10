@@ -32,13 +32,13 @@ spec:
     imagePullPolicy: Always
     script: |
       #!/bin/sh -x
-      cd $(params.from)
+      cd $(inputs.params.from)
       gitCommit=$(git rev-parse --short HEAD)
-      services promote  --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
+      services promote  --commit-name=$(inputs.params.commit-name) --commit-email=$(inputs.params.commit-email) --from $(inputs.params.from) --to $(inputs.params.to) --service $(inputs.params.service) --commit-message "Publish $(inputs.params.service) commit $gitCommit"
     env:
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: $(params.github-secret)
+          name: $(inputs.params.github-secret)
           key: token
 
