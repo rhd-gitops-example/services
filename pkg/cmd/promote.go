@@ -20,6 +20,7 @@ const (
 	fromFlag    = "from"
 	serviceFlag = "service"
 	toFlag      = "to"
+	repoFlag    = "repo"
 )
 
 func init() {
@@ -48,6 +49,13 @@ func init() {
 	)
 	logIfError(cobra.MarkFlagRequired(promoteCmd.PersistentFlags(), serviceFlag))
 	logIfError(viper.BindPFlag(serviceFlag, promoteCmd.PersistentFlags().Lookup(serviceFlag)))
+
+	promoteCmd.PersistentFlags().String(
+		repoFlag,
+		"",
+		"Git repository to work within",
+	)
+	logIfError(viper.BindPFlag(repoFlag, promoteCmd.PersistentFlags().Lookup(repoFlag)))
 }
 
 func newAuthor() (*git.Author, error) {

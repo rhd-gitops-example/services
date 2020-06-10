@@ -9,20 +9,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-var promoteEnvCmd = &cobra.Command{
-	Use:   "env",
-	Short: "promote from one environment folder to another in the same repository",
-	RunE:  promoteEnvAction,
+var promoteBranchCmd = &cobra.Command{
+	Use:   "branch",
+	Short: "promote between branches with only one environment folder in the same repository",
+	RunE:  promoteBranchAction,
 }
 
 func init() {
-	promoteCmd.AddCommand(promoteEnvCmd)
+	promoteCmd.AddCommand(promoteBranchCmd)
 }
 
-func promoteEnvAction(c *cobra.Command, args []string) error {
+func promoteBranchAction(c *cobra.Command, args []string) error {
 	// Required flags
-	fromEnvFolder := viper.GetString(fromFlag)
-	toEnvFolder := viper.GetString(toFlag)
+	fromBranch := viper.GetString(fromFlag)
+	toBranch := viper.GetString(toFlag)
 	service := viper.GetString(serviceFlag)
 	repo := viper.GetString(repoFlag)
 
@@ -46,13 +46,13 @@ func promoteEnvAction(c *cobra.Command, args []string) error {
 
 	from := promotion.EnvLocation{
 		RepoPath: repo,
-		Branch:   "master",
-		Folder:   fromEnvFolder,
+		Branch:   fromBranch,
+		Folder:   "",
 	}
 	to := promotion.EnvLocation{
 		RepoPath: repo,
-		Branch:   "master",
-		Folder:   toEnvFolder,
+		Branch:   toBranch,
+		Folder:   "",
 	}
 
 	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))
