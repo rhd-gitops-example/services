@@ -158,3 +158,24 @@ func createPullRequest(ctx context.Context, from, to EnvLocation, newBranchName,
 	pr, _, err := client.PullRequests.Create(ctx, pathToUse, prInput)
 	return pr, err
 }
+
+func getEnvironmentFolder(r git.Repo, folder string) (string, error) {
+	if folder == "" { // folder not specified, require that there is only one
+		dir, err := r.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return "", fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
+		}
+		return dir, nil
+	}
+
+	dirs, err := r.DirectoriesUnderPath("environments")
+	if err != nil {
+		return "", err
+	}
+	for _, dir := range dirs {
+		if dir.Name() == folder {
+			return dir.Name(), nil
+		}
+	}
+	return "", fmt.Errorf("did not find environment folder matching '%v', only found '%v'", folder, dirs)
+}

@@ -96,9 +96,12 @@ func (m *Repository) Commit(msg string, author *git.Author) error {
 	return m.CommitErr
 }
 
-// Not implemented
 func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
-	return nil, nil
+	dirs := make([]os.FileInfo, len(m.files), len(m.files))
+	for i, f := range m.files {
+		dirs[i] = newFileInfo(f)
+	}
+	return dirs, nil
 }
 
 func (m *Repository) GetUniqueEnvironmentFolder() (string, error) {
