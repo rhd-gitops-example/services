@@ -14,13 +14,13 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
-type EnvLocale struct {
-	Path   string // URL or local path
-	Branch string
+type EnvLocation struct {
+	RepoPath string // URL or local path
+	Branch   string
 }
 
-func (env EnvLocale) IsLocal() bool {
-	parsed, err := url.Parse(env.Path)
+func (env EnvLocation) IsLocal() bool {
+	parsed, err := url.Parse(env.RepoPath)
 	if err != nil {
 		log.Printf("Error while parsing URL for environment path: '%v', assuming it is local.\n", err)
 		return true
@@ -33,7 +33,7 @@ func (env EnvLocale) IsLocal() bool {
 //
 // It uses a Git cache to checkout the code to, and will copy the environment
 // configuration for the `fromURL` to the `toURL` in a named branch.
-func (s *ServiceManager) Promote(serviceName string, from, to EnvLocale, newBranchName, message string, keepCache bool) error {
+func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBranchName, message string, keepCache bool) error {
 	var reposToDelete []git.Repo
 	if !keepCache {
 		defer clearCache(&reposToDelete)
@@ -42,11 +42,11 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocale, newBran
 	var source git.Source
 	var err error
 	if from.IsLocal() {
-		source = s.localFactory(from.Path, s.debug)
+		source = s.localFactory(from.RepoPath, s.debug)
 	} else {
-		source, err = s.checkoutSourceRepo(from.Path, from.Branch)
+		source, err = s.checkoutSourceRepo(from.RepoPath, from.Branch)
 		if err != nil {
-			return git.GitError("error checking out source repository from Git", from.Path)
+			return git.GitError("error checking out source repository from Git", from.RepoPath)
 		}
 		reposToDelete = append(reposToDelete, source.(git.Repo))
 	}
@@ -54,7 +54,7 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocale, newBran
 		newBranchName = generateBranchName(source)
 	}
 
-	destination, err := s.checkoutDestinationRepo(to.Path, newBranchName)
+	destination, err := s.checkoutDestinationRepo(to.RepoPath, newBranchName)
 	if err != nil {
 		return err
 	}
@@ -101,10 +101,10 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocale, newBran
 	}
 
 	ctx := context.Background()
-	pr, err := createPullRequest(ctx, from, to, newBranchName, message, s.clientFactory(s.author.Token, to.Path, s.repoType, s.tlsVerify))
+	pr, err := createPullRequest(ctx, from, to, newBranchName, message, s.clientFactory(s.author.Token, to.RepoPath, s.repoType, s.tlsVerify))
 	if err != nil {
 		message := fmt.Sprintf("failed to create a pull-request for branch %s, error: %s", newBranchName, err)
-		return git.GitError(message, to.Path)
+		return git.GitError(message, to.RepoPath)
 	}
 	log.Printf("created PR %d", pr.Number)
 	return nil
@@ -137,23 +137,23 @@ func generateBranchName(source git.Source) string {
 }
 
 // generateDefaultCommitMsg constructs a default commit message based on the source information.
-func generateDefaultCommitMsg(source git.Source, serviceName string, from EnvLocale) string {
+func generateDefaultCommitMsg(source git.Source, serviceName string, from EnvLocation) string {
 	repo, ok := source.(git.Repo)
 	if ok {
 		commit := repo.GetCommitID()
-		return fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, from.Branch, from.Path)
+		return fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, from.Branch, from.RepoPath)
 	} else {
-		return fmt.Sprintf("Promoting service %s from local filesystem directory %s.", serviceName, from.Path)
+		return fmt.Sprintf("Promoting service %s from local filesystem directory %s.", serviceName, from.RepoPath)
 	}
 }
 
-func createPullRequest(ctx context.Context, from, to EnvLocale, newBranchName, commitMsg string, client *scm.Client) (*scm.PullRequest, error) {
+func createPullRequest(ctx context.Context, from, to EnvLocation, newBranchName, commitMsg string, client *scm.Client) (*scm.PullRequest, error) {
 	prInput, err := makePullRequestInput(from, to, newBranchName, commitMsg)
 	if err != nil {
 		return nil, err
 	}
 
-	u, _ := url.Parse(to.Path)
+	u, _ := url.Parse(to.RepoPath)
 	pathToUse := strings.TrimPrefix(strings.TrimSuffix(u.Path, ".git"), "/")
 	pr, _, err := client.PullRequests.Create(ctx, pathToUse, prInput)
 	return pr, err
