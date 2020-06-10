@@ -10,10 +10,10 @@ import (
 // TODO: OptionFunc for Title?
 // TODO: For the Head, should this try and determine whether or not this is a
 // fork ("user" of both repoURLs) and if so, simplify the Head?
-func makePullRequestInput(from, to EnvLocale, branchName, prBody string) (*scm.PullRequestInput, error) {
+func makePullRequestInput(from, to EnvLocation, branchName, prBody string) (*scm.PullRequestInput, error) {
 	var title string
 
-	_, toRepo, err := util.ExtractUserAndRepo(to.Path)
+	_, toRepo, err := util.ExtractUserAndRepo(to.RepoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func makePullRequestInput(from, to EnvLocale, branchName, prBody string) (*scm.P
 	if from.IsLocal() {
 		title = fmt.Sprintf("promotion from local filesystem directory to %s", toRepo)
 	} else {
-		_, fromRepo, err := util.ExtractUserAndRepo(from.Path)
+		_, fromRepo, err := util.ExtractUserAndRepo(from.RepoPath)
 		if err != nil {
 			return nil, err
 		}

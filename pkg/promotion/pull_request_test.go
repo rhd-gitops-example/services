@@ -9,13 +9,13 @@ import (
 )
 
 func TestMakePullRequestInput(t *testing.T) {
-	from := EnvLocale{
-		Path:   "https://example.com/project/dev-env.git",
-		Branch: "example",
+	from := EnvLocation{
+		RepoPath: "https://example.com/project/dev-env.git",
+		Branch:   "example",
 	}
-	to := EnvLocale{
-		Path:   "https://example.com/project/prod-env.git",
-		Branch: "master",
+	to := EnvLocation{
+		RepoPath: "https://example.com/project/prod-env.git",
+		Branch:   "master",
 	}
 	pr, err := makePullRequestInput(from, to, "my-test-branch", "foo bar wibble")
 	if err != nil {

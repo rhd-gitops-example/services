@@ -157,13 +157,13 @@ func promoteAction(c *cobra.Command, args []string) error {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
 
-	from := promotion.EnvLocale{
-		Path:   fromRepo,
-		Branch: fromBranch,
+	from := promotion.EnvLocation{
+		RepoPath: fromRepo,
+		Branch:   fromBranch,
 	}
-	to := promotion.EnvLocale{
-		Path:   toRepo,
-		Branch: toBranch,
+	to := promotion.EnvLocation{
+		RepoPath: toRepo,
+		Branch:   toBranch,
 	}
 
 	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))
