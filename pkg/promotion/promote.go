@@ -17,6 +17,7 @@ import (
 type EnvLocation struct {
 	RepoPath string // URL or local path
 	Branch   string
+	Folder   string
 }
 
 func (env EnvLocation) IsLocal() bool {
@@ -59,9 +60,9 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBr
 		return err
 	}
 	reposToDelete = append(reposToDelete, destination)
-	destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
+	destinationEnvironment, err := getEnvironmentFolder(destination, to.Folder)
 	if err != nil {
-		return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
+		return err
 	}
 
 	var copied []string
@@ -76,9 +77,9 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBr
 			// should not happen, but just in case
 			return fmt.Errorf("failed to convert source '%v' to Git Repo", source)
 		}
-		sourceEnvironment, err := repo.GetUniqueEnvironmentFolder()
+		sourceEnvironment, err := getEnvironmentFolder(repo, from.Folder)
 		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
+			return err
 		}
 
 		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, destinationEnvironment)
