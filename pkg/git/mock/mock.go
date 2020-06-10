@@ -97,7 +97,7 @@ func (m *Repository) Commit(msg string, author *git.Author) error {
 }
 
 func (m *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
-	dirs := make([]os.FileInfo, len(m.files), len(m.files))
+	dirs := make([]os.FileInfo, len(m.files))
 	for i, f := range m.files {
 		dirs[i] = newFileInfo(f)
 	}
