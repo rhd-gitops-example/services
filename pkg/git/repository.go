@@ -102,15 +102,13 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 // Returns an error if there was a problem in doing so (including if more than one folder found)
 // string return type for ease of mocking, callers would use .Name() anyway
 func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
-	lookup := filepath.Join(r.repoPath(), "environments")
-
-	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
+	foundDirsUnderEnv, err := r.DirectoriesUnderPath("environments")
 	if err != nil {
 		return "", err
 	}
 	numDirsUnderEnv := len(foundDirsUnderEnv)
 	if numDirsUnderEnv != 1 {
-		return "", fmt.Errorf("found %d directories under environments folder, wanted one. Looked under directory %s", numDirsUnderEnv, lookup)
+		return "", fmt.Errorf("found %d directories under environments folder, wanted one", numDirsUnderEnv)
 	}
 	foundEnvDir := foundDirsUnderEnv[0]
 	return foundEnvDir.Name(), nil
@@ -119,7 +117,8 @@ func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
 // Returns the directory names of those under a certain path (excluding sub-dirs)
 // Returns an error if a directory list attempt errored
 func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
-	files, err := ioutil.ReadDir(path)
+	lookup := filepath.Join(r.repoPath(), path)
+	files, err := ioutil.ReadDir(lookup)
 	if err != nil {
 		return nil, err
 	}
