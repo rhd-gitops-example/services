@@ -25,31 +25,6 @@ const (
 func init() {
 	promoteCmd.AddCommand(promoteComplexCmd)
 
-	// Required flags
-	promoteComplexCmd.Flags().String(
-		fromFlag,
-		"",
-		"source Git repository",
-	)
-	logIfError(promoteComplexCmd.MarkFlagRequired(fromFlag))
-	logIfError(viper.BindPFlag(fromFlag, promoteComplexCmd.Flags().Lookup(fromFlag)))
-
-	promoteComplexCmd.Flags().String(
-		toFlag,
-		"",
-		"destination Git repository",
-	)
-	logIfError(promoteComplexCmd.MarkFlagRequired(toFlag))
-	logIfError(viper.BindPFlag(toFlag, promoteComplexCmd.Flags().Lookup(toFlag)))
-
-	promoteComplexCmd.Flags().String(
-		serviceFlag,
-		"",
-		"service name to promote",
-	)
-	logIfError(cobra.MarkFlagRequired(promoteComplexCmd.Flags(), serviceFlag))
-	logIfError(viper.BindPFlag(serviceFlag, promoteComplexCmd.Flags().Lookup(serviceFlag)))
-
 	// Optional flags
 	promoteComplexCmd.Flags().String(
 		fromBranchFlag,

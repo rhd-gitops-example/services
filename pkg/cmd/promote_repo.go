@@ -17,31 +17,6 @@ var promoteRepoCmd = &cobra.Command{
 
 func init() {
 	promoteCmd.AddCommand(promoteRepoCmd)
-
-	// Required flags
-	promoteRepoCmd.Flags().String(
-		fromFlag,
-		"",
-		"source Git repository",
-	)
-	logIfError(promoteRepoCmd.MarkFlagRequired(fromFlag))
-	logIfError(viper.BindPFlag(fromFlag, promoteRepoCmd.Flags().Lookup(fromFlag)))
-
-	promoteRepoCmd.Flags().String(
-		toFlag,
-		"",
-		"destination Git repository",
-	)
-	logIfError(promoteRepoCmd.MarkFlagRequired(toFlag))
-	logIfError(viper.BindPFlag(toFlag, promoteRepoCmd.Flags().Lookup(toFlag)))
-
-	promoteRepoCmd.Flags().String(
-		serviceFlag,
-		"",
-		"service name to promote",
-	)
-	logIfError(cobra.MarkFlagRequired(promoteRepoCmd.Flags(), serviceFlag))
-	logIfError(viper.BindPFlag(serviceFlag, promoteRepoCmd.Flags().Lookup(serviceFlag)))
 }
 
 func promoteRepoAction(c *cobra.Command, args []string) error {
