@@ -3,7 +3,6 @@ apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
   name: automerge-pipeline-pullrequest-binding
-  namespace: tekton-pipelines
 spec:
   params:
   - name: pullrequesturl
@@ -14,13 +13,16 @@ spec:
     value: $(header.X-GitHub-Event)
   - name: branch-name
     value: $(body.pull_request.head.ref)
+  - name: commit-name
+    value: YOUR-GIT-USER-NAME
+  - name: commit-email
+    value: YOUR-GIT-EMAIL
 ---
 
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
   name: automerge-pipeline-push-binding
-  namespace: tekton-pipelines
 spec:
   params:
   - name: gitrepositoryurl
@@ -29,4 +31,5 @@ spec:
     value: $(header.X-GitHub-Event)
   - name: branch-name
     value: $(body.ref)
+
 

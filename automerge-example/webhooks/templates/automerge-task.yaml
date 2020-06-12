@@ -4,7 +4,7 @@ metadata:
   name: automerge-task
 spec:
   params:
- - name: github-secret
+  - name: github-secret
     type: string
     description: Name of the secret containing an access token for Github. Expects Tekton format, 'username' and 'password' keys.
   - name: event-type
@@ -16,6 +16,11 @@ spec:
   - name: pull-request-url
     type: string
     description: The URL of the pull request, where applicable
+  - name: commit-name
+    type: string
+    description: GitHub name to author the commit with
+  - name: commit-email
+    type: string
   inputs:
     resources:
       - name: git-source
@@ -25,7 +30,7 @@ spec:
     image: YOUR_DOCKER_HUB_ID/hub-test
     script: |
       #!/bin/bash
-      kubectl apply -k git-source/env --dry-run=client
+      kubectl apply -k git-source/environments/dev/env --dry-run=client
   - name: merge-pr
     image: YOUR_DOCKER_HUB_ID/hub-test
     script: |
@@ -34,7 +39,7 @@ spec:
       if [ $(params.event-type) = "push" ]; then
         echo "git push on branch $(params.branch-name)"
         if [ $(params.branch-name) = "refs/heads/master" ]; then
-          echo "kubectl apply -k env"
+          echo "kubectl apply -k git-source/environments/dev/env"
         else
           echo "do nothing"
         fi

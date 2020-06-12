@@ -12,7 +12,6 @@ This example is for more advanced users. Start with the [tekton-example](../tekt
 - [`tkn`](https://github.com/tektoncd/cli) if you're not using webhooks
 - [`docker`](https://docs.docker.com/get-docker/)
 
-*Note* The 'standalone' code was developed on Docker Desktop and does not yet include the Role-Based Access Control configuration necessary for it to run on OpenShift or other locked-down environments. The 'webhook' code was developed on OpenShift but used a ServiceAccount that had a generous Role attached to it. Full RBAC support should be added to this example under https://github.com/rhd-gitops-example/services/issues/77.
 
 ## Setup - both cases
 
@@ -58,7 +57,14 @@ kubectl apply -f standalone/resources
 kubectl apply -f standalone/templates
 ```
 
-Create or modify an existing ServiceAccount to use your `github-secret` (hint, you can use the provided `sa.yaml` file: this creates `my-sa` which will be used in the `tkn` command)
+If you did not follow the [tekton-example](../tekton-example/README.md), you will need to create or modify an existing ServiceAccount to use your `github-secret` (You can use the provided `sa.yaml` file - this creates `my-sa` which will be used in the `tkn` command).
+
+Once you have a service account, you will need to edit `rbac.yaml` and edit the entries `REPLACE_ME.YOUR_SA_NAME` and `REPLACE_ME.YOUR_NAMESPACE`.  Once this is done apply the yaml:
+
+```sh
+kubectl apply -f standalone/rbac.yaml
+```
+
 
 Finally start the Tekton pipeline referencing your ServiceAccount:
 
@@ -84,6 +90,7 @@ This secret is used in two related ways. We check the source repository out usin
 ```yaml
 ---
 apiVersion: v1
+type: kubernetes.io/basic-auth
 data:
   password: [base64-encoded token]
   username: [base64-encoded email address]
@@ -93,7 +100,7 @@ metadata:
     tekton.dev/git-0: https://github.ibm.com  # For example
   labels:
     serviceAccount: test-sa                   # As configured in the Webhooks Extension
-  name: github-repo-access-secret
+  name: github-secret
 
 ---
 apiVersion: v1
@@ -101,7 +108,7 @@ kind: ServiceAccount
 metadata:
   name: test-sa
 secrets:
-- name: github-repo-access-secret
+- name: github-secret
 ```
 
 ### Edit templates
@@ -111,7 +118,14 @@ Next edit the `webhooks/templates/*` files.
 - In automerge-task.yaml,
   - replace `YOUR_DOCKER_HUB_ID` with your DockerHub id.
   - replace `YOUR_GHE` with your GitHub Enterprise domain.
-- In automerge-tt.yaml, replace YOUR_TEKTON_SERVICE_ACCOUNT with the name of your ServiceAccount used by Tekton.
+- In automerge-tt.yaml,
+  - replace `YOUR_TEKTON_SERVICE_ACCOUNT` with the name of your ServiceAccount used by Tekton.
+- In automerge-tb.yaml,
+  - replace `YOUR-GIT-USER-NAME` with your GitHub user name
+  - replace `YOUR-GIT-EMAIL` with the associated email address
+- In rbac.yaml,
+  - replace `YOUR_TEKTON_SERVICE_ACCOUNT` as per earlier
+  - replace `YOUR_NAMESPACE` with the namespace of your serviceaccount
 
 ### Apply configuration
 
