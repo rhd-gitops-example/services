@@ -1,43 +1,44 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   name: service-promote
 spec:
   workspaces:
   - name: repo
-  params:
-  - name: github-secret
-    type: string
-    description: name of the secret that contains the GitHub access token, the access token must be in a token key.
-  - name: from
-    type: string
-    description: GitHub repository URL to be promoted from
-    default: /workspace/repo
-  - name: to
-    type: string
-    description: GitHub repository URL to be promoted to
-  - name: service
-    type: string
-    description: service name to be promoted
-  - name: commit-name
-    type: string
-    description: the GitHub username to username
-  - name: commit-email
-    type: string
-    description: the GitHub email to use
+  inputs:
+    params:
+    - name: github-secret
+      type: string
+      description: name of the secret that contains the GitHub access token, the access token must be in a token key.
+    - name: from
+      type: string
+      description: GitHub repository URL to be promoted from
+      default: /workspace/repo
+    - name: to
+      type: string
+      description: GitHub repository URL to be promoted to
+    - name: service
+      type: string
+      description: service name to be promoted
+    - name: commit-name
+      type: string
+      description: the GitHub username to username
+    - name: commit-email
+      type: string
+      description: the GitHub email to use
   steps:
   - name: promote
     image: quay.io/redhat-developer/gitops-cli
     imagePullPolicy: Always
     script: |
       #!/bin/sh -x
-      cd $(params.from)
+      cd $(inputs.params.from)
       gitCommit=$(git rev-parse --short HEAD)
-      services promote  --commit-name=$(params.commit-name) --commit-email=$(params.commit-email) --from $(params.from) --to $(params.to) --service $(params.service) --commit-message "Publish $(params.service) commit $gitCommit"
+      services promote  --commit-name=$(inputs.params.commit-name) --commit-email=$(inputs.params.commit-email) --from $(inputs.params.from) --to $(inputs.params.to) --service $(inputs.params.service) --commit-message "Publish $(inputs.params.service) commit $gitCommit"
     env:
     - name: GITHUB_TOKEN
       valueFrom:
         secretKeyRef:
-          name: $(params.github-secret)
+          name: $(inputs.params.github-secret)
           key: token
 
