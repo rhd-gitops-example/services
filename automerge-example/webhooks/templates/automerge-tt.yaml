@@ -6,16 +6,13 @@ spec:
   params:
   - name: pullrequesturl
     description: The pull request url
-    type: string
     default: notApplicable
   - name: github-secretname
     description: The git secret name
     default: github-secret
-    type: string
   - name: github-secret-keyname
     description: The git secret key name
     default: accessToken
-    type: string
   - name: gitrepositoryurl
     description: The url of the Git repository
   - name: event-type
@@ -23,11 +20,9 @@ spec:
   - name: branch-name
     description: The branch name associated with push events
   - name: commit-name
-    type: string
     description: GitHub name to author the commit with
     default: NA-for-push
   - name: commit-email
-    type: string
     description: GitHub email of author
     default: NA-for-push
   resourcetemplates:
