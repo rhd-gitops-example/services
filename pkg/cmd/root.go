@@ -10,19 +10,21 @@ import (
 )
 
 const (
-	githubTokenFlag        = "github-token"
 	branchNameFlag         = "branch-name"
-	fromFlag               = "from"
-	toFlag                 = "to"
-	serviceFlag            = "service"
-	repoTypeFlag           = "repository-type"
 	cacheDirFlag           = "cache-dir"
+	emailFlag              = "commit-email"
 	msgFlag                = "commit-message"
 	nameFlag               = "commit-name"
-	emailFlag              = "commit-email"
-	insecureSkipVerifyFlag = "insecure-skip-verify"
 	debugFlag              = "debug"
+	fromFlag               = "from"
+	fromBranchFlag         = "from-branch"
+	insecureSkipVerifyFlag = "insecure-skip-verify"
 	keepCacheFlag          = "keep-cache"
+	repoTypeFlag           = "repository-type"
+	serviceFlag            = "service"
+	toFlag                 = "to"
+	toBranchFlag           = "to-branch"
+	githubTokenFlag        = "github-token"
 )
 
 var rootCmd = &cobra.Command{

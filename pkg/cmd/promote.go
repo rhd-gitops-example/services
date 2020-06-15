@@ -88,6 +88,13 @@ func makePromoteCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag(debugFlag, cmd.Flags().Lookup(debugFlag)))
 
+	cmd.Flags().String(
+		fromBranchFlag,
+		"master",
+		"branch on the source Git repository",
+	)
+	logIfError(viper.BindPFlag(fromBranchFlag, cmd.Flags().Lookup(fromBranchFlag)))
+
 	cmd.Flags().Bool(
 		insecureSkipVerifyFlag,
 		false,
@@ -108,6 +115,13 @@ func makePromoteCmd() *cobra.Command {
 		"the type of repository: github, gitlab or ghe",
 	)
 	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
+
+	cmd.Flags().String(
+		toBranchFlag,
+		"master",
+		"branch on the destination Git repository",
+	)
+	logIfError(viper.BindPFlag(toBranchFlag, cmd.Flags().Lookup(toBranchFlag)))
 	return cmd
 }
 
@@ -127,9 +141,11 @@ func promoteAction(c *cobra.Command, args []string) error {
 	newBranchName := viper.GetString(branchNameFlag)
 	msg := viper.GetString(msgFlag)
 	debug := viper.GetBool(debugFlag)
+	fromBranch := viper.GetString(fromBranchFlag)
 	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
 	repoType := viper.GetString(repoTypeFlag)
+	toBranch := viper.GetString(toBranchFlag)
 
 	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
 	if err != nil {
@@ -140,7 +156,18 @@ func promoteAction(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to establish credentials: %w", err)
 	}
-	return promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType)).Promote(service, fromRepo, toRepo, newBranchName, msg, keepCache)
+
+	from := promotion.EnvLocation{
+		RepoPath: fromRepo,
+		Branch:   fromBranch,
+	}
+	to := promotion.EnvLocation{
+		RepoPath: toRepo,
+		Branch:   toBranch,
+	}
+
+	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))
+	return sm.Promote(service, from, to, newBranchName, msg, keepCache)
 }
 
 func newAuthor() (*git.Author, error) {

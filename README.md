@@ -70,19 +70,21 @@ Usage:
   services promote [flags]
 
 Flags:
-      --branch-name string       the name of the branch on the destination repository for the pull request
+      --branch-name string       the name of the branch on the destination repository for the pull request (auto-generated if empty)
       --cache-dir string         where to cache Git checkouts (default "~/.promotion/cache")
       --commit-email string      the email to use for commits when creating branches
       --commit-message string    the msg to use on the resultant commit and pull request
       --commit-name string       the name to use for commits when creating branches
       --debug                    additional debug logging output
       --from string              source Git repository
+      --from-branch string       branch on the source Git repository (default "master")
   -h, --help                     help for promote
       --insecure-skip-verify     Insecure skip verify TLS certificate
       --keep-cache               whether to retain the locally cloned repositories in the cache directory
       --repository-type string   the type of repository: github, gitlab or ghe (default "github")
       --service string           service name to promote
       --to string                destination Git repository
+      --to-branch string         branch on the destination Git repository (default "master")
 
 Global Flags:
       --github-token string   oauth access token to authenticate the request
@@ -97,12 +99,14 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 - `--commit-name` : The other half of `commit-email`. Both must be set.
 - `--debug` : prints extra debug output if true.
 - `--from` : an https URL to a GitOps repository for 'remote' cases, or a path to a Git clone of a microservice for 'local' cases.
+- `--from-branch` : use this to specify a branch on the source repository, instead of using the "master" branch.
 - `--help`: prints the above text if true.
 - `--insecure-skip-verify` : skip TLS cerificate verification if true. Do not set this to true unless you know what you are doing.
 - `--keep-cache` : `cache-dir` is deleted unless this is set to true. Keeping the cache will often cause further promotion attempts to fail. This flag is mostly used along with `--debug` when investigating failure cases. 
 - `--repository-type` : the type of repository: github, gitlab or ghe (default "github"). If `--from` is a Git URL, it must be of the same type as that specified via `--to`.
 - `--service` : the destination path for promotion is `/environments/<env-name>/services/<service-name>/base/config/`. This argument defines `service-name` in that path.
 - `--to`: an https URL to the destination GitOps repository.
+- `--to-branch` : use this to specify a branch on the destination repository, instead of using the "master" branch.
 
 ### Troubleshooting
 

@@ -7,21 +7,21 @@ import (
 	"github.com/rhd-gitops-example/services/pkg/util"
 )
 
-// TODO: OptionFuncs for Base and Title?
+// TODO: OptionFunc for Title?
 // TODO: For the Head, should this try and determine whether or not this is a
 // fork ("user" of both repoURLs) and if so, simplify the Head?
-func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody string) (*scm.PullRequestInput, error) {
+func makePullRequestInput(from, to EnvLocation, branchName, prBody string) (*scm.PullRequestInput, error) {
 	var title string
 
-	_, toRepo, err := util.ExtractUserAndRepo(toURL)
+	_, toRepo, err := util.ExtractUserAndRepo(to.RepoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if fromLocal {
+	if from.IsLocal() {
 		title = fmt.Sprintf("promotion from local filesystem directory to %s", toRepo)
 	} else {
-		_, fromRepo, err := util.ExtractUserAndRepo(fromURL)
+		_, fromRepo, err := util.ExtractUserAndRepo(from.RepoPath)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func makePullRequestInput(fromLocal bool, fromURL, toURL, branchName, prBody str
 	return &scm.PullRequestInput{
 		Title: title,
 		Head:  branchName,
-		Base:  "master",
+		Base:  to.Branch,
 		Body:  prBody,
 	}, nil
 }
