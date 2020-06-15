@@ -34,8 +34,9 @@ spec:
   - name: merge-pr
     image: YOUR_DOCKER_HUB_ID/hub-test
     script: |
-      #!/bin/bash -x
-
+      #!/bin/bash -ex
+      # Intentionally use the -e here so we fail the PipelineRun if anything goes wrong 
+      # for example in the case of bad credentials being provided.
       if [ $(params.event-type) = "push" ]; then
         echo "git push on branch $(params.branch-name)"
         if [ $(params.branch-name) = "refs/heads/master" ]; then
