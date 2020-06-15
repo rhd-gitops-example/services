@@ -6,13 +6,15 @@ spec:
   params:
   - name: github-secret
     type: string
-  - name: github-config
-    type: string
   - name: event-type
     type: string
   - name: branch-name
     type: string
   - name: pull-request-url
+    type: string
+  - name: commit-name
+    type: string
+  - name: commit-email
     type: string
   resources: 
   - name: source-repo
@@ -28,11 +30,13 @@ spec:
     params:
     - name: github-secret
       value: $(params.github-secret)
-    - name: github-config
-      value: $(params.github-config)
     - name: event-type
       value: $(params.event-type)
     - name: branch-name
       value: $(params.branch-name)
     - name: pull-request-url
       value: $(params.pull-request-url)
+    - name: commit-name
+      value: $(params.commit-name)
+    - name: commit-email
+      value: $(params.commit-email)
