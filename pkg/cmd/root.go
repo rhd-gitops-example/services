@@ -10,21 +10,15 @@ import (
 )
 
 const (
-	branchNameFlag         = "branch-name"
 	cacheDirFlag           = "cache-dir"
 	emailFlag              = "commit-email"
 	msgFlag                = "commit-message"
 	nameFlag               = "commit-name"
 	debugFlag              = "debug"
-	fromFlag               = "from"
-	fromBranchFlag         = "from-branch"
+	githubTokenFlag        = "github-token"
 	insecureSkipVerifyFlag = "insecure-skip-verify"
 	keepCacheFlag          = "keep-cache"
 	repoTypeFlag           = "repository-type"
-	serviceFlag            = "service"
-	toFlag                 = "to"
-	toBranchFlag           = "to-branch"
-	githubTokenFlag        = "github-token"
 )
 
 var rootCmd = &cobra.Command{
@@ -33,6 +27,16 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.PersistentFlags().String(emailFlag, "", "the email to use for commits when creating branches")
+	rootCmd.PersistentFlags().String(msgFlag, "", "the message to use on the resultant commit and pull request")
+	rootCmd.PersistentFlags().String(nameFlag, "", "the name to use for commits when creating branches")
+	rootCmd.PersistentFlags().Bool(debugFlag, false, "additional debug logging output")
+	rootCmd.PersistentFlags().String(githubTokenFlag, "", "oauth access token to authenticate the request")
+	rootCmd.PersistentFlags().Bool(insecureSkipVerifyFlag, false, "Insecure skip verify TLS certificate")
+	rootCmd.PersistentFlags().String(repoTypeFlag, "github", "the type of repository: github, gitlab or ghe")
+
+	logIfError(cobra.MarkFlagRequired(rootCmd.PersistentFlags(), githubTokenFlag))
+
 	cobra.OnInitialize(func() {
 		viper.AutomaticEnv()
 		viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -60,15 +64,29 @@ func presetRequiredFlags(cmd *cobra.Command) {
 
 // Execute is the main entry point into this component.
 func Execute() {
-	rootCmd.PersistentFlags().String(
+	bindFlags(rootCmd.PersistentFlags(), []string{
+		emailFlag,
+		msgFlag,
+		nameFlag,
+		debugFlag,
 		githubTokenFlag,
-		"",
-		"oauth access token to authenticate the request",
-	)
-	logIfError(cobra.MarkFlagRequired(rootCmd.PersistentFlags(), githubTokenFlag))
-	logIfError(viper.BindPFlag(githubTokenFlag, rootCmd.PersistentFlags().Lookup(githubTokenFlag)))
-	rootCmd.AddCommand(makePromoteCmd())
+		insecureSkipVerifyFlag,
+		repoTypeFlag,
+	})
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func logIfError(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
+func bindFlags(set *pflag.FlagSet, flags []string) {
+	for _, f := range flags {
+		logIfError(viper.BindPFlag(f, set.Lookup(f)))
 	}
 }

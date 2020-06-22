@@ -68,26 +68,34 @@ promote from one environment to another
 
 Usage:
   services promote [flags]
+  services promote [command]
+
+Available Commands:
+  branch      promote between branches within one repository
+  env         promote between environment folders within one repository
+  repo        promote between repositories
 
 Flags:
-      --branch-name string       the name of the branch on the destination repository for the pull request (auto-generated if empty)
+      --branch-name string       the branch on the destination repository for the pull request (auto-generated if empty)
       --cache-dir string         where to cache Git checkouts (default "~/.promotion/cache")
-      --commit-email string      the email to use for commits when creating branches
-      --commit-message string    the msg to use on the resultant commit and pull request
-      --commit-name string       the name to use for commits when creating branches
-      --debug                    additional debug logging output
-      --from string              source Git repository
-      --from-branch string       branch on the source Git repository (default "master")
+      --from string              the source Git repository (URL or local)
+      --from-branch string       the branch on the source Git repository (default "master")
+      --from-env-folder string   env folder on the source Git repository (if not provided, the repository should only have one folder under environments/)
   -h, --help                     help for promote
-      --insecure-skip-verify     Insecure skip verify TLS certificate
       --keep-cache               whether to retain the locally cloned repositories in the cache directory
-      --repository-type string   the type of repository: github, gitlab or ghe (default "github")
-      --service string           service name to promote
-      --to string                destination Git repository
-      --to-branch string         branch on the destination Git repository (default "master")
+      --service string           the name of the service to promote
+      --to string                the destination Git repository
+      --to-branch string         the branch on the destination Git repository (default "master")
+      --to-env-folder string     env folder on the destination Git repository (if not provided, the repository should only have one folder under environments/)
 
 Global Flags:
-      --github-token string   oauth access token to authenticate the request
+      --commit-email string      the email to use for commits when creating branches
+      --commit-message string    the message to use on the resultant commit and pull request
+      --commit-name string       the name to use for commits when creating branches
+      --debug                    additional debug logging output
+      --github-token string      oauth access token to authenticate the request
+      --insecure-skip-verify     Insecure skip verify TLS certificate
+      --repository-type string   the type of repository: github, gitlab or ghe (default "github")
 ```
 
 This will _copy_ all files under `/services/service-a/base/config/*` in `first-environment` to `second-environment`, commit and push, and open a PR for the change. Any of these arguments may be provided as environment variables, using all upper case and replacing `-` with `_`. Hence you can set CACHE_DIR, COMMIT_EMAIL, etc.
@@ -99,6 +107,7 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 - `--commit-name` : The other half of `commit-email`. Both must be set.
 - `--debug` : prints extra debug output if true.
 - `--from` : an https URL to a GitOps repository for 'remote' cases, or a path to a Git clone of a microservice for 'local' cases.
+- `--from-env` : use this to specify an environment folder in the source repository, for when you have more than one environment per repository. If this is not provided when the repository has more than one folder under `environments/`, then the operation will fail.
 - `--from-branch` : use this to specify a branch on the source repository, instead of using the "master" branch.
 - `--help`: prints the above text if true.
 - `--insecure-skip-verify` : skip TLS cerificate verification if true. Do not set this to true unless you know what you are doing.
@@ -106,7 +115,18 @@ This will _copy_ all files under `/services/service-a/base/config/*` in `first-e
 - `--repository-type` : the type of repository: github, gitlab or ghe (default "github"). If `--from` is a Git URL, it must be of the same type as that specified via `--to`.
 - `--service` : the destination path for promotion is `/environments/<env-name>/services/<service-name>/base/config/`. This argument defines `service-name` in that path.
 - `--to`: an https URL to the destination GitOps repository.
+- `--to-env` : use this to specify an environment folder in the destination repository, for when you have more than one environment per repository. If this is not provided when the repository has more than one folder under `environments/`, then the operation will fail.
 - `--to-branch` : use this to specify a branch on the destination repository, instead of using the "master" branch.
+
+### Promote Sub-commands
+The main promote commands provides a lot of flexibility with all of its options, but the subcommands provide a simpler interface for the usual promotion paths. For example, when promoting between environment folders in the same repository and branch, you could use either of these commands:
+``` bash
+services promote --from "https://github.com/example/my-gitops.git" --from-env-folder "dev" --to "https://github.com/example/my-gitops.git" --to-env-folder "prod" --service "example"
+
+# or
+
+services promote env --from "dev" --to "prod" --repo "https://github.com/example/my-gitops.git" --service "example"
+``` 
 
 ### Troubleshooting
 
