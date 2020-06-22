@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/rhd-gitops-example/services/pkg/git"
@@ -13,125 +12,61 @@ import (
 	"github.com/tcnksm/go-gitconfig"
 )
 
-func makePromoteCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "promote",
-		Short: "promote from one environment to another",
-		RunE:  promoteAction,
-	}
-
-	// Required flags
-	cmd.Flags().String(
-		fromFlag,
-		"",
-		"source Git repository",
-	)
-	logIfError(cmd.MarkFlagRequired(fromFlag))
-	logIfError(viper.BindPFlag(fromFlag, cmd.Flags().Lookup(fromFlag)))
-
-	cmd.Flags().String(
-		toFlag,
-		"",
-		"destination Git repository",
-	)
-	logIfError(cmd.MarkFlagRequired(toFlag))
-	logIfError(viper.BindPFlag(toFlag, cmd.Flags().Lookup(toFlag)))
-
-	cmd.Flags().String(
-		serviceFlag,
-		"",
-		"service name to promote",
-	)
-	logIfError(cmd.MarkFlagRequired(serviceFlag))
-	logIfError(viper.BindPFlag(serviceFlag, cmd.Flags().Lookup(serviceFlag)))
-
-	// Optional flags
-	cmd.Flags().String(
-		branchNameFlag,
-		"",
-		"the name of the branch on the destination repository for the pull request (auto-generated if empty)",
-	)
-	logIfError(viper.BindPFlag(branchNameFlag, cmd.Flags().Lookup(branchNameFlag)))
-
-	cmd.Flags().String(
-		cacheDirFlag,
-		"~/.promotion/cache",
-		"where to cache Git checkouts",
-	)
-	logIfError(viper.BindPFlag(cacheDirFlag, cmd.Flags().Lookup(cacheDirFlag)))
-
-	cmd.Flags().String(
-		emailFlag,
-		"",
-		"the email to use for commits when creating branches",
-	)
-	logIfError(viper.BindPFlag(emailFlag, cmd.Flags().Lookup(emailFlag)))
-
-	cmd.Flags().String(
-		msgFlag,
-		"",
-		"the msg to use on the resultant commit and pull request",
-	)
-	logIfError(viper.BindPFlag(msgFlag, cmd.Flags().Lookup(msgFlag)))
-
-	cmd.Flags().String(
-		nameFlag,
-		"",
-		"the name to use for commits when creating branches",
-	)
-	logIfError(viper.BindPFlag(nameFlag, cmd.Flags().Lookup(nameFlag)))
-
-	cmd.Flags().Bool(
-		debugFlag,
-		false,
-		"additional debug logging output",
-	)
-	logIfError(viper.BindPFlag(debugFlag, cmd.Flags().Lookup(debugFlag)))
-
-	cmd.Flags().String(
-		fromBranchFlag,
-		"master",
-		"branch on the source Git repository",
-	)
-	logIfError(viper.BindPFlag(fromBranchFlag, cmd.Flags().Lookup(fromBranchFlag)))
-
-	cmd.Flags().Bool(
-		insecureSkipVerifyFlag,
-		false,
-		"Insecure skip verify TLS certificate",
-	)
-	logIfError(viper.BindPFlag(insecureSkipVerifyFlag, cmd.Flags().Lookup(insecureSkipVerifyFlag)))
-
-	cmd.Flags().Bool(
-		keepCacheFlag,
-		false,
-		"whether to retain the locally cloned repositories in the cache directory",
-	)
-	logIfError(viper.BindPFlag(keepCacheFlag, cmd.Flags().Lookup(keepCacheFlag)))
-
-	cmd.Flags().String(
-		repoTypeFlag,
-		"github",
-		"the type of repository: github, gitlab or ghe",
-	)
-	logIfError(viper.BindPFlag(repoTypeFlag, cmd.Flags().Lookup(repoTypeFlag)))
-
-	cmd.Flags().String(
-		toBranchFlag,
-		"master",
-		"branch on the destination Git repository",
-	)
-	logIfError(viper.BindPFlag(toBranchFlag, cmd.Flags().Lookup(toBranchFlag)))
-	return cmd
+var promoteCmd = &cobra.Command{
+	Use:   "promote",
+	Short: "promote from one environment to another",
+	RunE:  promoteAction,
 }
 
-func logIfError(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
+const (
+	branchNameFlag    = "branch-name"
+	fromFlag          = "from"
+	fromBranchFlag    = "from-branch"
+	fromEnvFolderFlag = "from-env-folder"
+	serviceFlag       = "service"
+	toFlag            = "to"
+	toBranchFlag      = "to-branch"
+	toEnvFolderFlag   = "to-env-folder"
+
+	repoFlag = "repo" // used by subcommands
+)
+
+func init() {
+	rootCmd.AddCommand(promoteCmd)
+
+	promoteCmd.PersistentFlags().String(branchNameFlag, "", "the branch on the destination repository for the pull request (auto-generated if empty)")
+	promoteCmd.PersistentFlags().String(cacheDirFlag, "~/.promotion/cache", "where to cache Git checkouts")
+	promoteCmd.PersistentFlags().Bool(keepCacheFlag, false, "whether to retain the locally cloned repositories in the cache directory")
+
+	promoteCmd.Flags().String(fromFlag, "", "the source Git repository (URL or local)")
+	promoteCmd.Flags().String(toFlag, "", "the destination Git repository")
+	promoteCmd.Flags().String(serviceFlag, "", "the name of the service to promote")
+	promoteCmd.Flags().String(fromBranchFlag, "master", "the branch on the source Git repository")
+	promoteCmd.Flags().String(fromEnvFolderFlag, "", "env folder on the source Git repository (if not provided, the repository should only have one folder under environments/)")
+	promoteCmd.Flags().String(toBranchFlag, "master", "the branch on the destination Git repository")
+	promoteCmd.Flags().String(toEnvFolderFlag, "", "env folder on the destination Git repository (if not provided, the repository should only have one folder under environments/)")
+
+	logIfError(promoteCmd.MarkFlagRequired(fromFlag))
+	logIfError(promoteCmd.MarkFlagRequired(toFlag))
+	logIfError(promoteCmd.MarkFlagRequired(serviceFlag))
 }
 
 func promoteAction(c *cobra.Command, args []string) error {
+	bindFlags(c.PersistentFlags(), []string{
+		branchNameFlag,
+		cacheDirFlag,
+		keepCacheFlag,
+	})
+	bindFlags(c.Flags(), []string{
+		fromFlag,
+		toFlag,
+		serviceFlag,
+		fromBranchFlag,
+		fromEnvFolderFlag,
+		toBranchFlag,
+		toEnvFolderFlag,
+	})
+
 	// Required flags
 	fromRepo := viper.GetString(fromFlag)
 	toRepo := viper.GetString(toFlag)
@@ -140,34 +75,49 @@ func promoteAction(c *cobra.Command, args []string) error {
 	// Optional flags
 	newBranchName := viper.GetString(branchNameFlag)
 	msg := viper.GetString(msgFlag)
-	debug := viper.GetBool(debugFlag)
 	fromBranch := viper.GetString(fromBranchFlag)
-	insecureSkipVerify := viper.GetBool(insecureSkipVerifyFlag)
+	fromEnvFolder := viper.GetString(fromEnvFolderFlag)
 	keepCache := viper.GetBool(keepCacheFlag)
-	repoType := viper.GetString(repoTypeFlag)
 	toBranch := viper.GetString(toBranchFlag)
-
-	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
-	if err != nil {
-		return fmt.Errorf("failed to expand cacheDir path: %w", err)
-	}
-
-	author, err := newAuthor()
-	if err != nil {
-		return fmt.Errorf("unable to establish credentials: %w", err)
-	}
+	toEnvFolder := viper.GetString(toEnvFolderFlag)
 
 	from := promotion.EnvLocation{
 		RepoPath: fromRepo,
 		Branch:   fromBranch,
+		Folder:   fromEnvFolder,
 	}
 	to := promotion.EnvLocation{
 		RepoPath: toRepo,
 		Branch:   toBranch,
+		Folder:   toEnvFolder,
 	}
 
-	sm := promotion.New(cacheDir, author, promotion.WithDebug(debug), promotion.WithInsecureSkipVerify(insecureSkipVerify), promotion.WithRepoType(repoType))
+	sm, err := newServiceManager()
+	if err != nil {
+		return err
+	}
+
 	return sm.Promote(service, from, to, newBranchName, msg, keepCache)
+}
+
+func newServiceManager() (*promotion.ServiceManager, error) {
+	cacheDir, err := homedir.Expand(viper.GetString(cacheDirFlag))
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand cacheDir path: %w", err)
+	}
+
+	author, err := newAuthor()
+	if err != nil {
+		return nil, fmt.Errorf("unable to establish credentials: %w", err)
+	}
+
+	return promotion.New(
+		cacheDir,
+		author,
+		promotion.WithDebug(viper.GetBool(debugFlag)),
+		promotion.WithInsecureSkipVerify(viper.GetBool(insecureSkipVerifyFlag)),
+		promotion.WithRepoType(viper.GetString(repoTypeFlag)),
+	), nil
 }
 
 func newAuthor() (*git.Author, error) {
