@@ -14,20 +14,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
-type EnvLocation struct {
-	RepoPath string // URL or local path
-	Branch   string
-}
-
-func (env EnvLocation) IsLocal() bool {
-	parsed, err := url.Parse(env.RepoPath)
-	if err != nil {
-		log.Printf("Error while parsing URL for environment path: '%v', assuming it is local.\n", err)
-		return true
-	}
-	return parsed.Scheme == ""
-}
-
 // Promote is the main driver for promoting files between two
 // repositories.
 //
@@ -39,9 +25,13 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBr
 		defer clearCache(&reposToDelete)
 	}
 
+	fromIsLocal, err := from.IsLocal()
+	if err != nil {
+		return fmt.Errorf("failed to determine if repository is local: %w", err)
+	}
+
 	var source git.Source
-	var err error
-	if from.IsLocal() {
+	if fromIsLocal {
 		source = s.localFactory(from.RepoPath, s.debug)
 	} else {
 		source, err = s.checkoutSourceRepo(from.RepoPath, from.Branch)
@@ -54,18 +44,18 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBr
 		newBranchName = generateBranchName(source)
 	}
 
-	destination, err := s.checkoutDestinationRepo(to.RepoPath, newBranchName)
+	destination, err := s.checkoutDestinationRepo(to.RepoPath, to.Branch, newBranchName)
 	if err != nil {
 		return err
 	}
 	reposToDelete = append(reposToDelete, destination)
-	destinationEnvironment, err := destination.GetUniqueEnvironmentFolder()
+	destinationEnvironment, err := getEnvironmentFolder(destination, to.Folder)
 	if err != nil {
-		return fmt.Errorf("could not determine unique environment name for destination repository - check that only one directory exists under it and you can write to your cache folder")
+		return err
 	}
 
 	var copied []string
-	if from.IsLocal() {
+	if fromIsLocal {
 		copied, err = local.CopyConfig(serviceName, source, destination, destinationEnvironment)
 		if err != nil {
 			return fmt.Errorf("failed to set up local repository: %w", err)
@@ -76,9 +66,9 @@ func (s *ServiceManager) Promote(serviceName string, from, to EnvLocation, newBr
 			// should not happen, but just in case
 			return fmt.Errorf("failed to convert source '%v' to Git Repo", source)
 		}
-		sourceEnvironment, err := repo.GetUniqueEnvironmentFolder()
+		sourceEnvironment, err := getEnvironmentFolder(repo, from.Folder)
 		if err != nil {
-			return fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
+			return err
 		}
 
 		copied, err = git.CopyService(serviceName, source, destination, sourceEnvironment, destinationEnvironment)
@@ -141,9 +131,9 @@ func generateDefaultCommitMsg(source git.Source, serviceName string, from EnvLoc
 	repo, ok := source.(git.Repo)
 	if ok {
 		commit := repo.GetCommitID()
-		return fmt.Sprintf("Promoting service %s at commit %s from branch %s in %s.", serviceName, commit, from.Branch, from.RepoPath)
+		return fmt.Sprintf("Promote service %s at commit %s from %v", serviceName, commit, from)
 	} else {
-		return fmt.Sprintf("Promoting service %s from local filesystem directory %s.", serviceName, from.RepoPath)
+		return fmt.Sprintf("Promote service %s from local filesystem directory %s", serviceName, from.RepoPath)
 	}
 }
 
@@ -157,4 +147,28 @@ func createPullRequest(ctx context.Context, from, to EnvLocation, newBranchName,
 	pathToUse := strings.TrimPrefix(strings.TrimSuffix(u.Path, ".git"), "/")
 	pr, _, err := client.PullRequests.Create(ctx, pathToUse, prInput)
 	return pr, err
+}
+
+// getEnvironmentFolder returns the name of the folder to use, or an error.
+// Will return an error if the specified folder is not present in the repository,
+// or if there are multiple folders and one isn't specified in the args here.
+func getEnvironmentFolder(r git.Repo, folder string) (string, error) {
+	if folder == "" {
+		dir, err := r.GetUniqueEnvironmentFolder()
+		if err != nil {
+			return "", fmt.Errorf("could not determine unique environment name for source repository - check that only one directory exists under it and you can write to your cache folder")
+		}
+		return dir, nil
+	}
+
+	dirs, err := r.DirectoriesUnderPath("environments")
+	if err != nil {
+		return "", err
+	}
+	for _, dir := range dirs {
+		if dir.Name() == folder {
+			return dir.Name(), nil
+		}
+	}
+	return "", fmt.Errorf("did not find environment folder matching '%v', only found '%v'", folder, dirs)
 }

@@ -70,6 +70,16 @@ func TestClone(t *testing.T) {
 	}
 }
 
+func TestCloneIsIdempotent(t *testing.T) {
+	r, cleanup := cloneTestRepository(t)
+	defer cleanup()
+
+	err := r.Clone()
+	if err != nil {
+		t.Fatalf("failed to clone repository after it had already been cloned: %v", err)
+	}
+}
+
 func TestWalk(t *testing.T) {
 	r, cleanup := cloneTestRepository(t)
 	defer cleanup()

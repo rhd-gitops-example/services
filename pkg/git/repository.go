@@ -24,6 +24,7 @@ type Repository struct {
 	tlsVerify bool
 	debug     bool
 	logger    func(fmt string, v ...interface{})
+	noPush    bool
 }
 
 // NewRepository creates and returns a local cache of an upstream repository.
@@ -48,6 +49,13 @@ func (r *Repository) Clone() error {
 	if err != nil {
 		return fmt.Errorf("error creating the cache dir %s: %w", r.LocalPath, err)
 	}
+
+	// Just pull if the repo is already cached
+	if _, err := os.Stat(r.repoPath()); !os.IsNotExist(err) {
+		_, err = r.execGit(r.repoPath(), nil, "pull")
+		return err
+	}
+
 	// Intentionally omit output as it can contain an access token
 	_, err = r.execGit(r.LocalPath, nil, "clone", r.RepoURL)
 	return err
@@ -102,15 +110,13 @@ func (r *Repository) WriteFile(src io.Reader, dst string) error {
 // Returns an error if there was a problem in doing so (including if more than one folder found)
 // string return type for ease of mocking, callers would use .Name() anyway
 func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
-	lookup := filepath.Join(r.repoPath(), "environments")
-
-	foundDirsUnderEnv, err := r.DirectoriesUnderPath(lookup)
+	foundDirsUnderEnv, err := r.DirectoriesUnderPath("environments")
 	if err != nil {
 		return "", err
 	}
 	numDirsUnderEnv := len(foundDirsUnderEnv)
 	if numDirsUnderEnv != 1 {
-		return "", fmt.Errorf("found %d directories under environments folder, wanted one. Looked under directory %s", numDirsUnderEnv, lookup)
+		return "", fmt.Errorf("found %d directories under environments folder, wanted one", numDirsUnderEnv)
 	}
 	foundEnvDir := foundDirsUnderEnv[0]
 	return foundEnvDir.Name(), nil
@@ -119,7 +125,8 @@ func (r *Repository) GetUniqueEnvironmentFolder() (string, error) {
 // Returns the directory names of those under a certain path (excluding sub-dirs)
 // Returns an error if a directory list attempt errored
 func (r *Repository) DirectoriesUnderPath(path string) ([]os.FileInfo, error) {
-	files, err := ioutil.ReadDir(path)
+	lookup := filepath.Join(r.repoPath(), path)
+	files, err := ioutil.ReadDir(lookup)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +194,9 @@ func (r *Repository) Commit(msg string, author *Author) error {
 
 // Does a git push origin *branch name*
 func (r *Repository) Push(branchName string) error {
+	if r.noPush {
+		return nil
+	}
 	args := []string{"push", "origin", branchName}
 	_, err := r.execGit(r.repoPath(), nil, args...)
 	return err
@@ -252,4 +262,8 @@ func (r *Repository) DeleteCache() error {
 		return fmt.Errorf("failed deleting `%s` : %w", r.LocalPath, err)
 	}
 	return nil
+}
+
+func (r *Repository) DisablePush() {
+	r.noPush = true
 }

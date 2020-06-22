@@ -93,14 +93,21 @@ func (s *ServiceManager) checkoutSourceRepo(repoURL, branch string) (git.Repo, e
 	return repo, nil
 }
 
-func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Repo, error) {
-	repo, err := s.cloneRepo(repoURL, branch)
+// checkoutDestinationRepo clones the specified repo to the cache, and creates a new
+// branch (the "tip" branch) which forks off of the "base" branch.
+func (s *ServiceManager) checkoutDestinationRepo(repoURL, baseBranch, tipBranch string) (git.Repo, error) {
+	repo, err := s.cloneRepo(repoURL, tipBranch)
 	if err != nil {
 		return nil, git.GitError(fmt.Sprintf("failed to clone destination repository, error: %s", err.Error()), repoURL)
 	}
-	err = repo.CheckoutAndCreate(branch)
+	// need to checkout the base branch first, in case it is different than the default branch of the repository.
+	err = repo.Checkout(baseBranch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to checkout branch %s, error: %w", branch, err)
+		return nil, fmt.Errorf("failed to checkout existing branch %s, error: %w", baseBranch, err)
+	}
+	err = repo.CheckoutAndCreate(tipBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new branch %s, error: %w", tipBranch, err)
 	}
 	if repo == nil {
 		// Should never happen, but if it does...
@@ -109,6 +116,9 @@ func (s *ServiceManager) checkoutDestinationRepo(repoURL, branch string) (git.Re
 	return repo, nil
 }
 
+// cloneRepo clones the default branch of the repository into the cache.
+// NOTE: the path the repo is cloned to includes the specified branch, but the
+// actual contents are from the default branch.
 func (s *ServiceManager) cloneRepo(repoURL, branch string) (git.Repo, error) {
 	// This ensures that the URL has credentials for the author.
 	repoURL, err := addCredentialsIfNecessary(repoURL, s.author)

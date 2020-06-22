@@ -23,7 +23,7 @@ func TestMakePullRequestInput(t *testing.T) {
 	}
 
 	want := &scm.PullRequestInput{
-		Title: "promotion from dev-env to prod-env",
+		Title: "foo bar wibble",
 		Head:  "my-test-branch",
 		Base:  "master",
 		Body:  "foo bar wibble",
