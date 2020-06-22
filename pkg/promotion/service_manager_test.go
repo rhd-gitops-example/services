@@ -80,7 +80,7 @@ func promoteWithSuccess(t *testing.T, keepCache bool, repoType string, tlsVerify
 	expectedCommitMsg := msg
 	if msg == "" {
 		commit := devRepo.GetCommitID()
-		expectedCommitMsg = fmt.Sprintf("Promoting service my-service at commit %s from branch master in %s.", commit, dev.RepoPath)
+		expectedCommitMsg = fmt.Sprintf("Promote service my-service at commit %s from %v", commit, dev)
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
@@ -137,7 +137,7 @@ func promoteLocalWithSuccess(t *testing.T, keepCache bool, msg string) {
 
 	expectedCommitMsg := msg
 	if expectedCommitMsg == "" {
-		expectedCommitMsg = "Promoting service my-service from local filesystem directory /root/repo."
+		expectedCommitMsg = "Promote service my-service from local filesystem directory /root/repo"
 	}
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
@@ -179,7 +179,7 @@ func TestPromoteLocalWithSuccessOneEnvAndIsUsed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedCommitMsg := "Promoting service my-service from local filesystem directory /root/repo."
+	expectedCommitMsg := "Promote service my-service from local filesystem directory /root/repo"
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "/dev/config/myfile.yaml", "environments/staging/services/my-service/base/config/myfile.yaml")
@@ -274,7 +274,7 @@ func TestPromoteWithCacheDeletionFailure(t *testing.T) {
 	}
 
 	commit := devRepo.GetCommitID()
-	expectedCommitMsg := fmt.Sprintf("Promoting service my-service at commit %s from branch master in %s.", commit, dev.RepoPath)
+	expectedCommitMsg := fmt.Sprintf("Promote service my-service at commit %s from %v", commit, dev)
 
 	stagingRepo.AssertBranchCreated(t, "master", dstBranch)
 	stagingRepo.AssertFileCopiedInBranch(t, dstBranch, "environments/dev/services/my-service/base/config/myfile.yaml", "environments/staging/services/my-service/base/config/myfile.yaml")
